@@ -1,0 +1,919 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+td {padding:0;}
+.no {display:none;}
+div {border-style:solid;border-width:0;}
+</style>
+<script type="text/javascript">
+<!--
+
+var cwidth=950, cheight=500; // size of canvas
+var c;
+var h=16, w=30, m=99; // height, width, mines
+var board = []; // h*w, -1 = mine, 0-8 = square
+var boardKnowledge = []; // h*w, -1 = unknown, 0 = clear, 1 = mine
+var colors = ["white", "black", "#888", "red", "blue", "green", "yellow", "orange", "purple", "#003", "#030", "#300", "pink"];
+var defaultColors = ["#DDDDDD", "#0000FF", "#008000", "#FF0000", "#000080", "#800000", "#008080", "#000000", "#808080"];
+var secretColors = []; // number -> associated color
+var colorKnowledge = []; // color# (from secretColors) -> set of possible numbers
+var sets = []; // [color#, number (-1 if not certain), set of cells]
+var colorRestriction = 2; // 0 = none, 1 = random, 2 = blind
+
+var playing = false;
+var needOpen = 0;
+var level = 0;
+var showNumbers = false;
+var allowFlags = true;
+
+var browser = getBrowser(); // only want to call this once
+
+// Todo... in some order
+// Add global timer [necessary to be a game]
+// Prettify
+// Add loss condition [necessary to be a game]
+// Add flagging and chording [this will enable first two levels of each 8-group plus blind mode]
+// Add grading system, level display, that kinda thing [necessary to be a game]
+// Auto-end game if too slow [for TGM]
+// Idea: make opening of next board = to the last clicked square
+
+
+function init() {
+ // 16,16,40	2	117
+ // 16,16,40	1	521
+ // 16,16,40	0	605
+ // 16,16,60	1	17
+ // 16,16,60	0	33
+ h = 16;
+ w = 16;
+ m = 40;
+ document.bgColor = "#ccc";
+ 
+ c = $('c').getContext('2d');
+ $('c').height = cheight;
+ $('c').width = cwidth;
+ $('cube').height = cheight;
+ $('cube').width = cwidth;
+ $('c').addEventListener("mousedown", clicked, false);
+ $('c').addEventListener("mouseup", clickup, false);
+ 
+ level = -1;
+ nextLevel();
+}
+
+function nextLevel() {
+ level++;
+ playing = false;
+ level *= 2;
+ showNumbers = false;
+ allowFlags = false;
+ if (level < 8) {
+  m = 40;
+  showNumbers = (level < 4);
+  allowFlags = (level < 2);
+  if (level < 6) {
+   colorRestriction = 0;
+  } else {
+   colorRestriction = 1;
+  }
+ } else if (level < 16) {
+  m = 60;
+  showNumbers = (level < 12);
+  allowFlags = (level < 10);
+  if (level < 14) {
+   colorRestriction = 0;
+  } else {
+   colorRestriction = 1;
+  }
+ } else {
+  m = 40;
+  colorRestriction = 2;
+  showNumbers = false;
+  allowFlags = true;
+ }
+ level /= 2;
+ 
+ console.log("Level " + level);
+ x = Math.floor(Math.random()*w);
+ y = Math.floor(Math.random()*h);
+ 
+ generateBoard(x, y);
+ 
+ needOpen = h*w - m;
+ initBoardKnowledge();
+ openSquare(y,x);
+ playing = true;
+
+ draw();
+}
+
+function stringBoard() {
+ var v="";
+ for (var i=0; i<h; i++) {
+  for (var j=0; j<w; j++) {
+   if (board[i][j]==-1) {
+    v+="*";
+   } else {
+    v+=board[i][j];
+   }
+  }
+  v+="\n";
+ }
+ return v;
+}
+
+// generate a solvable board with known h, w, m, colorRestriction
+function generateBoard(x,y) {
+ //while (true) {
+  //h=16;w=16;m=60; // TEMP
+ 
+  board=[];boardKnowledge=[];secretColors=[];colorKnowledge=[];sets=[];
+  // determine basics
+  tryGenerateBoard(y,x);
+  chooseSecretColors();
+
+  // init knowledge
+  for (var ii=0; ii<10; ii++) {
+   for (var i=0; i<1000; i++) {
+    initKnowledge();
+
+    // open starting square
+    openSquare(y,x);
+
+    // use logic to figure stuff out
+    useLogic();
+   
+    if (!isSolvable()) {
+     perturb(y,x);
+  	//console.log(stringBoard());
+    }
+    if (isSolvable()) {
+     console.log("Took " + i + " perturbs");
+    return;
+    }
+   }
+  
+   console.log("Failed at " + i + " perturbs");
+   alert(isSolvable()); // TEMP
+  }
+}
+
+function clicked(event) {
+ if (!event) event = window.event;
+ if(event.preventDefault) {event.preventDefault();event.stopPropagation();}
+ var x=0, y=0;
+ if (event.x || event.y) {
+  x = Math.floor((event.x - $('c').offsetLeft)/30);
+  y = Math.floor((event.y - $('c').offsetTop)/30);
+ } else {
+  x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - $('c').offsetLeft)/30);
+  y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - $('c').offsetTop)/30);
+ }
+ if (x<0 || y<0 || x>=w || y>=h) {
+  return;
+ }
+ var leftClick = event.button != 2;
+ if (leftClick) { // left click
+  if (boardKnowledge[y][x] == 1) return;
+  if (board[y][x] >= 0) { // open square
+   if (boardKnowledge[y][x] > -1) { // chord?
+	// chord(y,x);
+   } else { // open square
+    openSquare(y,x);
+    draw();
+   }
+  } else { // click on mined square
+   //death();
+  }
+ } else { // right click
+  if (boardKnowledge[y][x] == 1) { // flagged
+   boardKnowledge[y][x] = -1;
+   draw();
+  } else if (boardKnowledge[y][x] == -1) { // flag
+   boardKnowledge[y][x] = 1;
+   draw();
+  }
+ }
+}
+
+function clickup(event) {
+ if (!event) event = window.event;
+ if(event.preventDefault) {event.preventDefault();event.stopPropagation();}
+}
+
+function death() {
+}
+
+function tryGenerateBoard(y,x) {
+ // array
+ board=[];
+ for (var i=0; i<h; i++) {
+  board[i]=[];
+  for (var j=0; j<w; j++) {
+   board[i][j]=0;
+  }
+ }
+ // mines and numbers
+ for (var n=0; n<m; n++) {
+  while (true) {
+   yy = Math.floor(Math.random()*h);
+   xx = Math.floor(Math.random()*w);
+   if (board[yy][xx] != -1 && (Math.abs(yy-y) > 1 || Math.abs(xx-x) > 1)) {
+    // place mine
+    board[yy][xx] = -1;
+    for (var i=Math.max(0, yy-1); i<Math.min(h, yy+2); i++) {
+     for (var j=Math.max(0, xx-1); j<Math.min(w, xx+2); j++) {
+      if (board[i][j] != -1) {
+       board[i][j] = board[i][j]+1;
+      }
+     }
+    }
+    break;
+   }
+  }
+ }
+}
+
+function chooseSecretColors() {
+ secretColors = [];
+ for (var i=0; i<9; i++) {
+  while (secretColors.length == i) {
+   var col = Math.floor(Math.random() * colors.length);
+   if (secretColors.indexOf(col) == -1) {
+    secretColors.push(col);
+   }
+  }
+ }
+}
+
+function initKnowledge() {
+ initBoardKnowledge();
+ initColorKnowledge();
+ sets = [];
+}
+
+function initBoardKnowledge() {
+ for (var i=0; i<h; i++) {
+  boardKnowledge[i]=[];
+  for (var j=0; j<w; j++) {
+   boardKnowledge[i][j]=-1;
+  }
+ }
+}
+
+function initColorKnowledge() {
+ if (colorRestriction == 1) {
+  colorKnowledge[0] = [0];
+  for (var i=1; i<secretColors.length; i++) {
+   colorKnowledge[i] = [1,2,3,4,5,6,7,8];
+  }
+ } else {
+  colorKnowledge = [[0],[1],[2],[3],[4],[5],[6],[7],[8]];
+ }
+}
+
+function openSquare(y,x) {
+ // floodfill
+ queue = [[y,x]];
+ queue_cnt = 0;
+ while (queue_cnt < queue.length) {
+  element = queue[queue_cnt];
+  queue_cnt++;
+  if (boardKnowledge[element[0]][element[1]] == -1) { // haven't been here
+   boardKnowledge[element[0]][element[1]] = 0;
+   needOpen--;
+   if (needOpen == 0 && playing) {
+    nextLevel();
+	return;
+   }
+   if (board[element[0]][element[1]] == 0) { // opening
+    for (var ii=Math.max(0, element[0]-1); ii<Math.min(h, element[0]+2); ii++) {
+     for (var jj=Math.max(0, element[1]-1); jj<Math.min(w, element[1]+2); jj++) {
+      if (boardKnowledge[ii][jj] == -1 && !contains(queue, [ii,jj])) {
+       queue.push([ii,jj]);
+      }
+     }
+    }
+   }
+  }
+ }
+
+ // make sets for non-openings in queue
+ for (var i=0; i<queue.length; i++) {
+  if (board[queue[i][0]][queue[i][1]] == 0) continue;
+  var realColor = board[queue[i][0]][queue[i][1]];
+  var subSet = [secretColors[realColor], -1, []];
+  //if (colorKnowledge[realColor] == undefined) { //WAT
+  // console.log(JSON.stringify(colorKnowledge)+"     "+realColor);
+  // continue;
+  //}
+  if (colorKnowledge[realColor].length == 1) {
+   subSet[1] = realColor;
+  }
+  for (var ii=Math.max(0, queue[i][0]-1); ii<Math.min(h, queue[i][0]+2); ii++) {
+   for (var jj=Math.max(0, queue[i][1]-1); jj<Math.min(w, queue[i][1]+2); jj++) {
+    if (boardKnowledge[ii][jj] != 0) {
+     subSet[2].push([ii,jj]);
+    }
+   }
+  }
+  sets.push(subSet);
+ }
+}
+
+function useLogic() {
+ var deduction = true; // at each stage, did we make a deduction?
+ var cnt = 0;
+ while (deduction==true && cnt<1000) {
+  cnt++;
+  deduction = false;
+
+  // set logic
+  var i = sets.length;
+  while (i--) {
+   var cells = sets[i][2];
+   if (cells.length == 0) {
+    sets.splice(i, 1);
+	continue;
+   }
+   
+   var opened = 0, flagged = 0, unknown = 0;
+   for (var j=0; j<cells.length; j++) {
+    if (boardKnowledge[cells[j][0]][cells[j][1]] == 0) {
+     opened++;
+    } else if (boardKnowledge[cells[j][0]][cells[j][1]] == 1) {
+     flagged++;
+    } else if (boardKnowledge[cells[j][0]][cells[j][1]] == -1) {
+     unknown++;
+    } else {
+     alert("wat?");
+    }
+   }
+   var minNum = flagged, maxNum = flagged+unknown;
+
+   if (colorRestriction < 2) {
+    // remove known squares from set and adjust number
+    if ((opened>0 || flagged>0) && sets[i][1] >= 0) {
+     sets[i][1] -= flagged;
+     sets[i][2] = cells.filter(function(a) {return (boardKnowledge[a[0]][a[1]] == -1);});
+     cells = sets[i][2];
+     deduction = true;
+     opened = 0;
+     flagged = 0;
+    } else if (opened>0 && sets[i][1] == -1) {
+     sets[i][2] = cells.filter(function(a) {return (boardKnowledge[a[0]][a[1]] != 0);});
+     cells = sets[i][2];
+     deduction = true;
+     opened = 0;
+    }
+
+    // remove garbage sets
+    if (unknown == 0 && sets[i][1] >= 0) {
+     sets.splice(i, 1);
+     deduction = true;
+     continue;
+    }
+
+    // set with unknown number, learn about the color
+    if (sets[i][1] == -1) {
+     // make sure sets[i][0] color doesn't correspond to any invalid numbers
+     var cols = colorKnowledge[secretColors.indexOf(sets[i][0])];
+     var cols2 = cols.filter(function(a) {return (a>=minNum && a<=maxNum);});
+     if (JSON.stringify(cols) != JSON.stringify(cols2)) {
+      colorKnowledge[secretColors.indexOf(sets[i][0])] = cols2;
+      deduction = true;
+	  break;
+     }
+    }
+
+    // set with known number, all unknown squares are mines or open
+    if (sets[i][1] >= 0) {
+     // open all squares?
+     if (sets[i][1] == 0) {
+      for (var j=0; j<cells.length; j++) {
+       if (boardKnowledge[cells[j][0]][cells[j][1]] == -1) {
+        //boardKnowledge[cells[j][0]][cells[j][1]] = 0;
+        openSquare(cells[j][0], cells[j][1]);
+       }
+      }
+      sets.splice(i, 1); // remove set
+      deduction = true;
+      continue;
+     // mark all mines?
+     } else if (sets[i][1] == unknown) {
+      for (var j=0; j<cells.length; j++) {
+       if (boardKnowledge[cells[j][0]][cells[j][1]] == -1) {
+        boardKnowledge[cells[j][0]][cells[j][1]] = 1;
+       }
+      }
+      sets.splice(i, 1); // remove set
+      deduction = true;
+      continue;
+     }
+    }
+
+    // compare to other sets
+    // both sets must have known numbers, or else the same color
+    for (var j=sets.length-1; j>i; j--) {
+     var intersection = setIntersect(sets[i][2], sets[j][2]);
+	 if (intersection.length == 0) continue;
+	 var iMinusj = setMinus(sets[i][2], sets[j][2]);
+	 var jMinusi = setMinus(sets[j][2], sets[i][2]);
+ 	
+	 // if i and j are the same set
+	 if (iMinusj.length == 0 && jMinusi.length == 0) {
+ 	 if (sets[i][1] == -1) sets[i][1] = sets[j][1]; // take number info from j
+	  sets.splice(j, 1); // remove j
+	  deduction = true;
+	  continue;
+	 // if j contains i
+	 } else if (iMinusj.length == 0) {
+ 	  // no good if colors are different and at least one is unknown
+	  if (!((sets[i][1]==-1 && sets[j][1]==-1 && sets[i][0]==sets[j][0]) || (sets[i][1]>-1 && sets[j][1]>-1))) continue;
+	  sets[j][2] = jMinusi;
+	  sets[j][1] -= sets[i][1];
+	  deduction = true;
+	 // if i contains j
+	 } else if (jMinusi.length == 0) {
+ 	  // no good if colors are different and at least one is unknown
+	  if (!((sets[i][1]==-1 && sets[j][1]==-1 && sets[i][0]==sets[j][0]) || (sets[i][1]>-1 && sets[j][1]>-1))) continue;
+	  sets[i][2] = iMinusj;
+	  sets[i][1] -= sets[j][1];
+	  deduction = true;
+	 // 2-1 with i bigger
+	 } else if (sets[i][1] != -1 && sets[j][1] != -1 && sets[i][1] - sets[j][1] == iMinusj.length) {
+	  // everything in iMinusj is a mine
+	  for (var k=0; k<iMinusj.length; k++) {
+       if (boardKnowledge[iMinusj[k][0]][iMinusj[k][1]] == -1) {
+        boardKnowledge[iMinusj[k][0]][iMinusj[k][1]] = 1;
+       }
+      }
+	  // everything in jMinusi is empty
+	  for (var k=0; k<jMinusi.length; k++) {
+       if (boardKnowledge[jMinusi[k][0]][jMinusi[k][1]] == -1) {
+	    openSquare(jMinusi[k][0], jMinusi[k][1]);
+       }
+      }
+	  // replace i with intersection
+	  sets[i][2] = intersection;
+	  sets[i][1] = sets[j][1];
+	  // delete j
+	  sets.splice(j, 1);
+      deduction = true;
+      continue;
+	 // 2-1 with j bigger
+	 } else if (sets[i][1] != -1 && sets[j][1] != -1 && sets[j][1] - sets[i][1] == jMinusi.length) {
+	  // everything in jMinusi is a mine
+	  for (var k=0; k<jMinusi.length; k++) {
+       if (boardKnowledge[jMinusi[k][0]][jMinusi[k][1]] == -1) {
+        boardKnowledge[jMinusi[k][0]][jMinusi[k][1]] = 1;
+       }
+      }
+	  // everything in iMinusj is empty
+	  for (var k=0; k<iMinusj.length; k++) {
+       if (boardKnowledge[iMinusj[k][0]][iMinusj[k][1]] == -1) {
+	    openSquare(iMinusj[k][0], iMinusj[k][1]);
+       }
+      }
+	  // replace i with intersection
+	  sets[i][2] = intersection;
+	  // delete j
+	  sets.splice(j, 1);
+      deduction = true;
+      continue;
+	 }
+    }
+   } else if (colorRestriction == 2) {
+    // we can open all squares if all flags are known
+	if (sets[i][1] == flagged) {
+	 for (var j=0; j<cells.length; j++) {
+      if (boardKnowledge[cells[j][0]][cells[j][1]] == -1) {
+       openSquare(cells[j][0], cells[j][1]);
+      }
+     }
+	 sets.splice(i, 1); // remove set
+     deduction = true;
+     continue;
+	}
+	// if all are known and there is exactly one flag left, flag it
+	if (unknown==1 && sets[i][1] == flagged+1) {
+	 for (var j=0; j<cells.length; j++) {
+      if (boardKnowledge[cells[j][0]][cells[j][1]] == -1) {
+       boardKnowledge[cells[j][0]][cells[j][1]] = 1;
+      }
+     }
+	 sets.splice(i, 1); // remove set
+	 deduction = true;
+	 continue;
+	}
+   }
+  }
+
+  // color logic
+  if (colorRestriction == 1) {
+   for (var i=1; i<colorKnowledge.length; i++) {
+    // solved color
+    if (colorKnowledge[i].length == 1) {
+     // remove this number from other colors
+     for (var j=1; j<colorKnowledge.length; j++) {
+      if (j != i) {
+       if (colorKnowledge[j].indexOf(colorKnowledge[i][0]) > -1) {
+        colorKnowledge[j] = colorKnowledge[j].filter(function(a) {return (a!=colorKnowledge[i][0]);});
+        deduction = true;
+       }
+      }
+     }
+     // give number to sets with this color
+     for (var j=0; j<sets.length; j++) {
+      if (sets[j][0] == secretColors[i] && sets[j][1] == -1) {
+       sets[j][1] = colorKnowledge[i][0];
+       deduction = true;
+      }
+     }
+    }
+   }
+  }
+	// todo: more complex colors, etc.
+  
+    // new logic
+    //[4,1,[[6,26],[7,26]]]
+    //[11,-1,[[6,26],[7,26],[8,26],[8,28]]]
+    //11 = [3,4]
+    // => 11 = [3], [8,26] and [8,28] are mines
+	
+	
+	// something goes wrong with random colors! the //WAT comments signify testing
+	// I saw a thingy with a -2 clue. maybe that is part of the problem, not treating -1 clues properly. is it related to the thing about two equal colors?
+ }
+
+ if (cnt >= 999) {
+  alert("infinite loop!");
+ }
+}
+
+// is this board solvable?
+// i.e. did our logic so far solve the puzzle?
+function isSolvable() {
+ for (var i=0; i<h; i++) {
+  for (var j=0; j<w; j++) {
+   if (boardKnowledge[i][j]==-1) return false;
+  }
+ }
+ return true;
+}
+
+function perturb(starty, startx) {
+ function isFull(arr) {
+  return board[arr[0]][arr[1]] == -1;
+ }
+ function makeEmpty(arr) {
+  yy = arr[0]; xx = arr[1];
+  board[yy][xx] = 0;
+  for (var i=Math.max(0, yy-1); i<Math.min(h, yy+2); i++) {
+   for (var j=Math.max(0, xx-1); j<Math.min(w, xx+2); j++) {
+    if (i==yy && j==xx) continue;
+    if (board[i][j] != -1) {
+     board[i][j] = board[i][j]-1;
+    } else {
+	 board[yy][xx] = board[yy][xx]+1;
+	}
+   }
+  }
+  //console.log("made empty "+yy+","+xx+"\n"+stringBoard());
+ }
+ function makeFull(arr) {
+  yy = arr[0]; xx = arr[1];
+  board[yy][xx] = -1;
+  for (var i=Math.max(0, yy-1); i<Math.min(h, yy+2); i++) {
+   for (var j=Math.max(0, xx-1); j<Math.min(w, xx+2); j++) {
+    if (i==yy && j==xx) continue;
+    if (board[i][j] != -1) {
+     board[i][j] = board[i][j]+1;
+    }
+   }
+  }
+  //console.log("made full "+yy+","+xx+"\n"+stringBoard());
+ }
+
+ // choose a set at random
+ if (sets.length == 0) {
+  // make a new set with everything we don't know
+  var set = [];
+  for (var i=0; i<h; i++) {
+   for (var j=0; j<w; j++) {
+    if (boardKnowledge[i][j]==-1) set.push([i,j]);
+   }
+  }
+  sets.push([0,0,set]);
+ }
+ var set_index = Math.floor(Math.random() * sets.length);
+ //console.log("SETS " + JSON.stringify(sets));
+ //if (sets[set_index] == undefined) {
+ // console.log(sets);
+ // console.log(set_index);
+ //}
+ var set_cells = sets[set_index][2];
+ 
+ // Make a list of all the squares in the grid, in this order:
+ // - first, unknown squares on the boundary of known space
+ // - next, unknown squares beyond that boundary
+ // - last, known squares, but not within one square of the starting position.
+ // Um, but don't count anything in our set or next to the starting point!
+ var unknownBeyondBoundary = [];
+ var unknownInBoundary = [];
+ var known = [];
+ for (var i=0; i<h; i++) {
+  for (var j=0; j<w; j++) {
+   if (contains(set_cells, [i,j])) continue;
+   if (i>=starty-1 && i<=starty+1 && j>=startx-1 && j<=startx+1) continue;
+   if (boardKnowledge[i][j] > -1) {
+    known.push([i,j]);
+   } else {
+    // is on boundary?
+	var onBoundary = false;
+	for (var ii=Math.max(0, i-1); ii<Math.min(h, i+2); ii++) {
+     for (var jj=Math.max(0, j-1); jj<Math.min(w, j+2); jj++) {
+      if (boardKnowledge[ii][jj] > -1) {
+       onBoundary = true;
+	   break;
+      }
+     }
+    }
+	if (onBoundary) {
+	 unknownInBoundary.push([i,j]);
+	} else {
+	 unknownBeyondBoundary.push([i,j]);
+    }
+   }
+  }
+ }
+ // Randomly shuffle each of these sections individually, and combine them.
+ shuffle(unknownBeyondBoundary);
+ shuffle(unknownInBoundary);
+ shuffle(known);
+ var combinedSquares = unknownInBoundary.concat(unknownBeyondBoundary).concat(known);
+ //console.log(JSON.stringify(combinedSquares));
+ 
+ // Count the number of full and empty squares in the perturbing set.
+ var nfull = 0, nempty = 0;
+ for (var i=0; i<set_cells.length; i++) {
+  if (isFull(set_cells[i])) {
+   nfull++;
+  } else {
+   nempty++;
+  }
+ }
+ //console.log(nfull + ", " + nempty);
+ 
+ // Go through the squares list until we find either 'nfull' empty squares or 'nempty' full squares
+ var squarePtr = 0, nemptyList = 0, nfullList = 0;
+ for (squarePtr=0; squarePtr<combinedSquares.length; squarePtr++) {
+  if (isFull(combinedSquares[squarePtr])) {
+   nfullList++;
+  } else {
+   nemptyList++;
+  }
+  if ((nfullList == nempty && nempty>0) || (nemptyList == nfull && nfull>0)) {
+   break;
+  }
+ }
+ 
+ // If we couldn't find enough...
+ if (squarePtr == combinedSquares.length) {
+  // Randomly fill a random selection of our perturbing set from the empty squares
+  var cnt = 0;
+  for (var i=0; i<combinedSquares.length; i++) {
+   if (!isFull(combinedSquares[i])) {
+    cnt++;
+    makeFull(combinedSquares[i]);
+   }
+  }
+  shuffle(set_cells);
+  for (var i=0; i<cnt; i++) {
+   //if (set_cells[i] == undefined) {
+   // console.log(set_cells);
+   //}
+   makeFull(set_cells[i]);
+  }
+ } else {
+  if (nfullList == nempty && nempty>0) {
+   // Put a mine in each empty square in perturbing set and remove one from the first 'nempty' squares in the list
+   for (var i=0; i<set_cells.length; i++) {
+    if (!isFull(set_cells[i])) {
+     makeFull(set_cells[i]);
+    }
+   }
+   for (var i=0; i<combinedSquares.length; i++) {
+    if (isFull(combinedSquares[i])) {
+	 makeEmpty(combinedSquares[i]);
+	 nempty--;
+	 if (nempty==0) break;
+	}
+   }
+  } else {
+   // Remove a mine from each full square in perturbing set and add one to the first 'nfull' squares in the list.
+   for (var i=0; i<set_cells.length; i++) {
+    if (isFull(set_cells[i])) {
+     makeEmpty(set_cells[i]);
+    }
+   }
+   for (var i=0; i<combinedSquares.length; i++) {
+    if (!isFull(combinedSquares[i])) {
+	 makeFull(combinedSquares[i]);
+	 nfull--;
+	 if (nfull==0) break;
+	}
+   }
+  }
+ }
+}
+
+// http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length; i; i -= 1) {
+        j = Math.floor(Math.random() * i);
+        x = a[i - 1];
+        a[i - 1] = a[j];
+        a[j] = x;
+    }
+}
+
+function draw() {
+ // draw board
+ c.font = "12px Arial"
+ for (var i=0; i<h; i++) {
+  for (var j=0; j<w; j++) {
+   drawSquare("#ccc", j*30, i*30, 30);
+  }
+ }
+
+ for (var i=0; i<h; i++) {
+  for (var j=0; j<w; j++) {
+  // -1 = unknown, 0 = clear, 1 = mine
+   if (boardKnowledge[i][j] == -1) { //unknown
+    drawButton("#fff", "#ccc", "#888", j*30, i*30, 30);
+   } else if (boardKnowledge[i][j] == 0) {
+    if (colorRestriction == 0 && showNumbers && board[i][j] > 0) {
+	 drawNumber(board[i][j], defaultColors[board[i][j]], j*30, i*30, 30);
+	} else if (colorRestriction == 0 && !showNumbers) {
+	 drawSquare(defaultColors[board[i][j]], j*30, i*30, 30);
+	} else if (colorRestriction == 1) {
+     drawSquare(colors[secretColors[board[i][j]]], j*30, i*30, 30);
+	} else if (colorRestriction == 2) {
+	 drawSquare(defaultColors[0], j*30, i*30, 30);
+	}
+   } else if (boardKnowledge[i][j] == 1) {
+    drawFlag(j*30, i*30);
+   }
+  }
+ }
+}
+
+function drawSquare(color, x, y, size) {
+ c.strokeStyle = "#000";
+ c.fillStyle = color;
+ c.beginPath();
+ c.moveTo(x, y);
+ c.lineTo(x+size, y);
+ c.lineTo(x+size, y+size);
+ c.lineTo(x, y+size);
+ c.closePath();
+ c.fill();
+ c.stroke();
+}
+
+function drawNumber(num, color, x, y, size) {
+ c.font = "Bold 24px Arial";
+ c.fillStyle = color;
+ c.textAlign = "center";
+ c.fillText(""+num, x + 15, y + 24);
+}
+
+function drawButton(color1, color2, color3, x, y, size) {
+ c.strokeStyle = "#000";
+ c.fillStyle = color2;
+ c.beginPath();
+ c.moveTo(x, y);
+ c.lineTo(x+size, y);
+ c.lineTo(x+size, y+size);
+ c.lineTo(x, y+size);
+ c.closePath();
+ c.fill();
+ c.fillStyle = color1;
+ c.beginPath();
+ c.moveTo(x, y);
+ c.lineTo(x+size, y);
+ c.lineTo(x+size-(size/8), y+(size/8));
+ c.lineTo(x+(size/8), y+(size/8));
+ c.lineTo(x+(size/8), y+size-(size/8));
+ c.lineTo(x, y+size);
+ c.closePath();
+ c.fill();
+ c.fillStyle = color3;
+ c.beginPath();
+ c.moveTo(x+size, y+size);
+ c.lineTo(x+size, y);
+ c.lineTo(x+size-(size/8), y+(size/8));
+ c.lineTo(x+size-(size/8), y+size-(size/8));
+ c.lineTo(x+(size/8), y+size-(size/8));
+ c.lineTo(x, y+size);
+ c.closePath();
+ c.fill();
+}
+
+function drawFlag(x, y) {
+ c.strokeStyle = "#000";
+ c.beginPath();
+ c.moveTo(x+10, y+10);
+ c.lineTo(x+20, y+10);
+ c.lineTo(x+20, y+20);
+ c.lineTo(x+10, y+20);
+ c.closePath();
+ c.stroke();
+}
+
+function drawCircle(color, x, y, r, filled) {
+ c.strokeStyle = color;
+ c.fillStyle = color;
+ c.beginPath();
+ c.arc(x, y, r, 0, 2*Math.PI);
+ c.closePath();
+ c.stroke();
+ if (filled) {
+  c.fill();
+ }
+}
+
+function drawCircleLine(color, x1, y1, r1, x2, y2, r2) {
+ baseLength = sqrt((y2-y1)*(y2-y1)+(x2-x1)*(x2-x1));
+ c.strokeStyle = color;
+ c.beginPath();
+ c.moveTo(x1 + (x2-x1)*(r1/baseLength), y1 + (y2-y1)*(r1/baseLength));
+ c.lineTo(x2 + (x1-x2)*(r2/baseLength), y2 + (y1-y2)*(r2/baseLength));
+ c.stroke();
+}
+
+// does array contain element?
+function contains(arr, element) {
+ for (var i=0; i<arr.length; i++) {
+  if (JSON.stringify(arr[i]) == JSON.stringify(element)) {
+   return true;
+  }
+ }
+ return false;
+}
+
+// is array 1 a subset of array 2?
+function isSubset(arr1, arr2) {
+ for (var i=0; i<arr1.length; i++) {
+  if (!contains(arr2,arr1[i])) {
+   return false;
+  }
+ }
+ return true;
+}
+
+// array 1 minus array 2
+function setMinus(arr1, arr2) {
+ return arr1.filter(function(a) {return (!contains(arr2,a));});
+}
+
+// array 1 intersect array 2
+function setIntersect(arr1, arr2) {
+ return arr1.filter(function(a) {return (contains(arr2,a));});
+}
+
+function $(str) {return document.getElementById(str);}
+function sqrt(x){return Math.sqrt(x);}
+
+function getBrowser() {
+ // http://www.quirksmode.org/js/detect.html
+ var versionSearchString;
+ var dataBrowser = [
+  {string:navigator.userAgent, subString:"Chrome", identity:"Chrome"},
+  {string:navigator.userAgent, subString:"Safari", identity:"Chrome"},
+  {string:navigator.userAgent, subString:"Firefox", identity:"Firefox"},
+  {string:navigator.userAgent, subString:"MSIE", identity:"IE", versionSearch:"MSIE"}];
+
+ function searchString(data) {
+  for (var i=0;i<data.length;i++) {
+   var dataString = data[i].string;
+   var dataProp = data[i].prop;
+   if (dataString) {
+    if (dataString.indexOf(data[i].subString) != -1)
+     return data[i].identity;
+   } else if (dataProp)
+    return data[i].identity;
+  }
+ };
+ 
+ return searchString(dataBrowser) || "An unknown browser";
+}
+// -->
+</script>
+</head>
+<body onload="init()" text="black">
+<div height="1000" width="500" id="cube"><canvas width="500" height="500" id="c"></canvas></div>
+<div id="data"></div>
+</body></html>
