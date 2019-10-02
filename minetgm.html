@@ -25,6 +25,7 @@ var needOpen = 0;
 var level = 0;
 var showNumbers = false;
 var allowFlags = true;
+var startTime = 0;
 
 var browser = getBrowser(); // only want to call this once
 
@@ -47,6 +48,7 @@ function init() {
  h = 16;
  w = 16;
  m = 40;
+ startTime = new Date();
  document.bgColor = "#ccc";
  
  c = $('c').getContext('2d');
@@ -61,39 +63,35 @@ function init() {
  nextLevel();
 }
 
+// Mines, flags, numbers, color restriction
+var levelTypes = [
+	[40, true, true, 0],
+	[40, false, true, 0],
+	[40, false, false, 0],
+	[40, false, false, 1],
+	[60, true, true, 0],
+	[60, false, true, 0],
+	[60, false, false, 0],
+	[60, false, false, 1],
+	[40, true, false, 2]
+];
+
 function nextLevel() {
- level++;
  playing = false;
- level *= 2;
- showNumbers = false;
- allowFlags = false;
- if (level < 8) {
-  m = 40;
-  showNumbers = (level < 4);
-  allowFlags = (level < 2);
-  if (level < 6) {
-   colorRestriction = 0;
-  } else {
-   colorRestriction = 1;
-  }
- } else if (level < 16) {
-  m = 60;
-  showNumbers = (level < 12);
-  allowFlags = (level < 10);
-  if (level < 14) {
-   colorRestriction = 0;
-  } else {
-   colorRestriction = 1;
-  }
- } else {
-  m = 40;
-  colorRestriction = 2;
-  showNumbers = false;
-  allowFlags = true;
+ level++;
+ if (level >= levelTypes.length) {
+  alert("GM! Time: " + ((new Date() - startTime) / 1000));
+  init();
+  return;
  }
- level /= 2;
+ 
+ m = levelTypes[level][0];
+ allowFlags = levelTypes[level][1];
+ showNumbers = levelTypes[level][2];
+ colorRestriction = levelTypes[level][3];
  
  console.log("Level " + level);
+ $('data').innerHTML = "Level: " + level + "<br>Mines: " + m + "<br>Flags: " + (allowFlags ? "yes" : "no") + "<br>Numbers: " + (showNumbers ? "yes" : "no") + "<br>Colors: " + (colorRestriction == 0 ? "normal" : (colorRestriction == 1 ? "random" : "no"));
  x = Math.floor(Math.random()*w);
  y = Math.floor(Math.random()*h);
  
@@ -177,7 +175,7 @@ function clicked(event) {
   if (boardKnowledge[y][x] == 1) return;
   if (board[y][x] >= 0) { // open square
    if (boardKnowledge[y][x] > -1) { // chord?
-	// chord(y,x);
+    chord(y,x);
    } else { // open square
     openSquare(y,x);
     draw();
@@ -319,6 +317,22 @@ function openSquare(y,x) {
   }
   sets.push(subSet);
  }
+}
+
+function chord(y,x) {
+ var flagged = 0;
+ for (var i=Math.max(0, y-1); i<Math.min(h, y+2); i++) {
+  for (var j=Math.max(0, x-1); j<Math.min(w, x+2); j++) {
+   if (boardKnowledge[i][j] == 1) flagged++;
+  }
+ }
+ if (flagged != board[y][x]) return;
+ for (var i=Math.max(0, y-1); i<Math.min(h, y+2); i++) {
+  for (var j=Math.max(0, x-1); j<Math.min(w, x+2); j++) {
+   if (boardKnowledge[i][j] == -1) openSquare(i,j);
+  }
+ }
+ draw();
 }
 
 function useLogic() {
@@ -913,7 +927,7 @@ function getBrowser() {
 // -->
 </script>
 </head>
-<body onload="init()" text="black">
+<body onload="init()" text="black" oncontextmenu="return false;">
 <div height="1000" width="500" id="cube"><canvas width="500" height="500" id="c"></canvas></div>
 <div id="data"></div>
 </body></html>
