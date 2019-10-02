@@ -184,6 +184,7 @@ function clicked(event) {
    //death();
   }
  } else { // right click
+  if (!allowFlags) return;
   if (boardKnowledge[y][x] == 1) { // flagged
    boardKnowledge[y][x] = -1;
    draw();
