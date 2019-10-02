@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/w3.css">
+    <link rel="stylesheet" href="css/minetgm.css">
+    <script src="js/vue.min.js"></script>
+    <title>Minesweeper: The Grand Master</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+   <div id="app" class="wrapper w3-container w3-padding-0 w3-margin-0"
+         tabindex="-1"
+         @keyup.esc="onEsc()"
+         @keyup.enter="if(dialogShowed) hideDialog()"
+         v-focus v-cloak>
+        <div class="level-display"
+            v-if="gameStarted"
+        >
+            {{currentRoundNumber()}} / {{rounds}}
+        </div>
+        <div class="minetgm"
+            :style="{ width: tableWidth, height: tableHeight }">
+			<div v-for="r in gridRange" class="row" :style="{height: rowHeight}">
+				<div v-for="c in gridRange" class="cell"
+					 :style="{width: colWidth, fontSize: cellFontSize }"
+					 @mouseover="setHoveredCell(r, c, $event)"
+					 @mouseleave="hoveredCell = [-1, -1]"
+					 v-on:mousedown="setClickedCell(r, c, $event)"
+					 v-on:mouseup="setUnclickedCell(r, c, $event)"
+					>
+					<span :class="[cells[r][c].cssClasses]"
+						  :style="cells[r][c].colorStyle"
+						  style="cursor: default;">
+						{{ cells[r][c].symbol }}
+					</span>
+				</div>
+			</div>
+        </div>
+
+        <div class="w3-modal"
+             :class="[dialogShowed ? 'display-block' : 'display-none']">
+            <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="min-width: 350px; max-width: 800px;">
+                <header class="w3-container w3-blue w3-center">
+                    <span @click="hideDialog"
+                          class="w3-button w3-display-topright w3-xxlarge w3-blue w3-hover-blue w3-hover-text-black"
+                          style="padding: 0 10px 0 0;"
+                          title="Minesweeper: The Grand Master">
+                    &times;
+                    </span>
+                    <h2>Minesweeper: The Grand Master</h2>
+                </header>
+
+                <div class="w3-bar w3-light-grey w3-border-bottom">
+                    <button class="tablink w3-bar-item w3-button"
+                            @click="changeDialogTab('settings')"
+                            :class="[settingsTabVisible  ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
+                        Settings
+                    </button>
+                    <button class="tablink w3-bar-item w3-button"
+                            @click="changeDialogTab('stats')"
+                            :class="[statsTabVisible ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
+                        Stats
+                    </button>
+                </div>
+
+                <div class="w3-container w3-margin w3-padding-0" v-if="settingsTabVisible">
+                    <div class="w3-row" >
+                        <div class="w3-col">
+							High Score: S
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w3-container w3-margin" v-if="statsTabVisible">
+                    <table class="w3-table-all w3-large">
+                        <tr>
+                            <td>Time</td>
+                            <td>{{ stats.resultTimeString() }}</td>
+                        </tr>
+                        <tr
+                            :style="{ fontWeight: stats.totalTime() === personalBests['0'] ? 'bold' : 'normal' }"
+                        >
+                            <td>Personal Best</td>
+                            <td>{{ pbTimeString() }}</td>
+                        </tr>
+                        <tr>
+                            <td>Rank</td>
+                            <td>{{ rank() }}</td>
+                        </tr>
+                    </table>
+                    <div class="w3-row" v-if="stats.rounds.length === parseInt(rounds)">
+                        <div class="w3-row w3-col"
+                             :class="{'w3-half': parseInt(rounds) > 1}"
+                             style="margin-top: 5px; overflow-y:scroll; overflow-x:hidden; max-height:250px;">
+                            <table v-for="round in parseInt(rounds)" class="w3-table-all w3-hoverable w3-centered">
+                                <thead>
+                                    <tr class="w3-light-grey">
+                                        <th>Round</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tr v-for="round in parseInt(rounds)" :class="{'w3-text-red': stat.err}">
+                                    <td>{{round}}</td>
+                                    <td>{{stats.time_for_round(round)}}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="w3-container w3-light-grey w3-center">
+                    <button type="button"
+                            class="w3-btn w3-indigo w3-text-white w3-xlarge"
+                            style="width: 80%; margin: 10px;"
+                            @click="hideDialog(); startGame()"
+                            ref="btn">
+                        Start Game
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/minetgm.js"></script>
+</body>
+</html>

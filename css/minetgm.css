@@ -1,0 +1,190 @@
+* {
+    margin: 0;
+    box-sizing: border-box; /* padding and border incleded in the width/height */
+    overflow-y: hidden;
+    overflow-x: hidden;
+    scrolling: no;
+    seamless: seamless;
+}
+
+body {
+    margin: 50px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 5px 25px 5px 5px;
+    background: url('../img/dr_down_16.png') no-repeat right;
+    background-position-x: calc(100% - 5px);
+}
+
+select::-ms-expand {
+    display: none;
+}
+
+.wrapper {
+    overflow-y: hidden;
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.minetgm {
+    position:absolute;
+    top:50%;
+    left:50%;
+    -ms-transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+}
+
+.row {
+    margin: 0;
+}
+
+.cell {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+
+    -webkit-user-select: none;
+    -moz-user-select: -moz-none;
+    -ms-user-select: none;
+    user-select: none;
+
+    justify-content: center; /* align horizontal */
+    align-items: center;
+
+    float: left;
+    padding: 0;
+
+    width: 50%;
+    height: 100%;
+
+    border: 1px solid #ccc;
+    cursor: default;
+
+    font-weight: bold;
+}
+
+.transition {
+    transition: background 800ms;
+}
+
+.cell-symbol {
+    color: inherit;
+    font-weight: bold;
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+.normal-cell {
+    color: black;
+    background: white;
+}
+
+.hovered-cell {
+    color: black;
+    /*background: rgb(249, 246, 243);*/
+    border: 1px solid #555;
+}
+
+.traced-cell {
+    color: black;
+    background: #b5fcac;
+}
+
+.selected-cell {
+    color: white;
+    background: navy;
+}
+
+.correct-cell {
+    color: black;
+    background: #b5fcac;
+}
+
+.wrong-cell {
+    color: black;
+    background: #f4adad;
+}
+
+.color-num {
+    padding: 3px 10px;
+    margin-right: 2px;
+    margin-bottom: 5px;
+    display: inline-block;
+    border: 1px solid #ccc;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+#settings-btn {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 5vmin;
+    height: 5vmin;
+    padding: 0;
+    background: transparent url('../img/settings_48.png') no-repeat;
+    background-size: 5vmin 5vmin;
+    opacity: 0.10;
+    border: none;
+    outline-style: none;
+    transition: opacity 500ms;
+}
+
+#settings-btn:hover {
+    opacity: 1;
+}
+
+.grid-input {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.hover-text-bold:hover {
+    font-weight: bold;
+}
+
+.display-block {
+    display: block;
+}
+
+.display-none {
+    display: none;
+}
+
+.mouse-map {
+    background: white;
+    border: 2px solid #ccc;
+}
+
+.center-dot {
+    position:absolute;
+    top:50%;
+    left:50%;
+    width: 10px;
+    height: 10px;
+    -ms-transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+    pointer-events: none;
+    background: url('../img/green_dot.png');
+}
+
+.round-display {
+    position: fixed;
+    top: 2px;
+    font-size: 2em;
+    left: 50%;
+    transform: translateX(-50%)
+}
