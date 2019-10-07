@@ -19,6 +19,8 @@ var secretColors = []; // number -> associated color
 var colorKnowledge = []; // color# (from secretColors) -> set of possible numbers
 var sets = []; // [color#, number (-1 if not certain), set of cells]
 var colorRestriction = 2; // 0 = none, 1 = random, 2 = blind
+var FIRST_TORIKAN = 180000; // PB 103.684
+var SECOND_TORIKAN = 500000; // PB 336.906
 
 var playing = false;
 var needOpen = 0;
@@ -26,17 +28,15 @@ var level = 0;
 var showNumbers = false;
 var allowFlags = true;
 var startTime = 0;
+var splits = [];
 
 var browser = getBrowser(); // only want to call this once
 
 // Todo... in some order
-// Add global timer [necessary to be a game]
 // Prettify
-// Add loss condition [necessary to be a game]
-// Add flagging and chording [this will enable first two levels of each 8-group plus blind mode]
-// Add grading system, level display, that kinda thing [necessary to be a game]
-// Auto-end game if too slow [for TGM]
-// Idea: make opening of next board = to the last clicked square
+// Credits or whatever
+// Set reasonable torikans
+// Better random colors
 
 
 function init() {
@@ -60,27 +60,33 @@ function init() {
  $('c').addEventListener("mouseup", clickup, false);
  
  level = -1;
- nextLevel();
+ splits = [];
+ nextLevel(-1,-1);
 }
 
 // Mines, flags, numbers, color restriction
 var levelTypes = [
+	[30, true, true, 0],
 	[40, true, true, 0],
 	[40, false, true, 0],
 	[40, false, false, 0],
 	[40, false, false, 1],
-	[60, true, true, 0],
-	[60, false, true, 0],
-	[60, false, false, 0],
-	[60, false, false, 1],
+	[52, true, true, 0],
+	[64, true, true, 0],
+	[64, false, true, 0],
+	[64, false, false, 0],
+	[64, false, false, 1],
 	[40, true, false, 2]
 ];
 
-function nextLevel() {
+function nextLevel(y, x) {
  playing = false;
  level++;
+ if (level > 0) {
+  splits = splits.concat(new Date() - startTime);
+ }
  if (level >= levelTypes.length) {
-  alert("GM! Time: " + ((new Date() - startTime) / 1000));
+  alert("Grade: GM\nTime: " + ((new Date() - startTime) / 1000) + "\nSplits: " + splits);
   init();
   return;
  }
@@ -92,9 +98,11 @@ function nextLevel() {
  
  console.log("Level " + level);
  $('data').innerHTML = "Level: " + level + "<br>Mines: " + m + "<br>Flags: " + (allowFlags ? "yes" : "no") + "<br>Numbers: " + (showNumbers ? "yes" : "no") + "<br>Colors: " + (colorRestriction == 0 ? "normal" : (colorRestriction == 1 ? "random" : "no"));
- x = Math.floor(Math.random()*w);
- y = Math.floor(Math.random()*h);
  
+ if (x==-1 && y==-1) {
+  x = Math.floor(Math.random()*w);
+  y = Math.floor(Math.random()*h);
+ }
  generateBoard(x, y);
  
  needOpen = h*w - m;
@@ -181,7 +189,7 @@ function clicked(event) {
     draw();
    }
   } else { // click on mined square
-   //death();
+   death();
   }
  } else { // right click
   if (!allowFlags) return;
@@ -201,6 +209,9 @@ function clickup(event) {
 }
 
 function death() {
+ grade = ["F", "D", "C", "B", "A", "S", "S+", "*", "**", "***", "M", "GM?"][level]
+ alert("Grade: " + grade + "\nTime: " + ((new Date() - startTime) / 1000) + "\nSplits: " + splits);
+ init();
 }
 
 function tryGenerateBoard(y,x) {
@@ -282,7 +293,18 @@ function openSquare(y,x) {
    boardKnowledge[element[0]][element[1]] = 0;
    needOpen--;
    if (needOpen == 0 && playing) {
-    nextLevel();
+    var curTime = (new Date() - startTime);
+    if (level == 4 && (curTime > FIRST_TORIKAN)) {
+	 level++;
+	 splits = splits.concat(curTime);
+	 death();
+	} else if (level == 9 && (curTime > SECOND_TORIKAN)) {
+	 level++;
+	 splits = splits.concat(curTime);
+	 death();
+	} else {
+	 nextLevel(y,x);
+	}
 	return;
    }
    if (board[element[0]][element[1]] == 0) { // opening
@@ -838,7 +860,8 @@ function drawButton(color1, color2, color3, x, y, size) {
 }
 
 function drawFlag(x, y) {
- c.strokeStyle = "#000";
+ c.strokeStyle = "#f00";
+ c.fillStyle = "#f00";
  c.beginPath();
  c.moveTo(x+10, y+10);
  c.lineTo(x+20, y+10);
@@ -846,6 +869,7 @@ function drawFlag(x, y) {
  c.lineTo(x+10, y+20);
  c.closePath();
  c.stroke();
+ c.fill();
 }
 
 function drawCircle(color, x, y, r, filled) {
