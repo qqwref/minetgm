@@ -1,11 +1,11 @@
 const PB_KEY = 'minetgm-pbs';
 
 function Cell(number) {
-	this.mine = 0;
+    this.mine = 0;
     this.number = number;
     this.symbol = number;
     this.colorStyle = 'color: black';
-	this.cssClasses = [];
+    this.cssClasses = [];
 }
 
 var timeString = function(diff) {
@@ -48,8 +48,8 @@ var appData = {
     cellFontSize: 'calc(8vmin - 8px)',
 
     dialogShowed: false,
-	settingsTabVisible: true,
-	statsTabVisible: false,
+    settingsTabVisible: true,
+    statsTabVisible: false,
 
     stats: {
         startTime: new Date(),
@@ -172,7 +172,23 @@ vueApp = new Vue({
             this.gameStarted = false;
             this.initTable();
             this.stats.clear();
-            this.setTableMargin(50);
+            function $(str) {return document.getElementById(str);}
+            c = $('c').getContext('2d');
+            $('c').height = 500;
+            $('c').width = 500;
+            $('c').addEventListener("mousedown", self.clicked, false);
+            $('c').addEventListener("mouseup", self.clickup, false);
+            
+            c.font = "Bold 24px Arial";
+            c.fillStyle = "black";
+            c.textAlign = "center";
+            c.fillText(""+6, 180 + 15, 180 + 24);
+        },
+        clicked: function (event) {
+            return;
+        },
+        clickup: function (event) {
+            return;
         },
         initTable: function () {
             this.clearIndexes();
@@ -185,12 +201,6 @@ vueApp = new Vue({
                 this.gameTimerId = setTimeout(this.gameTimerOut, this.timerMinutes * 60 * 1000);
             }
             this.gameStarted = true;
-        },
-        setTableMargin: function(margin) {
-            document.getElementsByTagName('body')[0].style.margin = `${margin}px`;
-            this.tableWidth = parseInt(this.tableSize) + "px";
-            this.tableHeight = parseInt(this.tableSize) + "px";
-            this.cellFontSize = (parseInt(this.tableSize) * this.fontSize / this.gridSize / 133) + "px";
         },
         startNextRound: function() {
             this.initTable();
@@ -230,12 +240,12 @@ vueApp = new Vue({
                 this.processClick(cellX, cellY, event.button);
             }
         },
-		setUnclickedCell: function (cellX, cellY, event) {
-			return;
+        setUnclickedCell: function (cellX, cellY, event) {
+            return;
         },
-		processClick: function (cellX, cellY, mouseButton) {
-			console.log(cellX + ", " + cellY + " @ " + mouseButton);
-		},
+        processClick: function (cellX, cellY, mouseButton) {
+            console.log(cellX + ", " + cellY + " @ " + mouseButton);
+        },
         tracedCell: function (cellIdx) {
             return this.cells[cellIdx].traced;
         },
@@ -243,13 +253,13 @@ vueApp = new Vue({
             var g, i;
             var cellCount = this.gridSize * this.gridSize;
 
-			this.cells = [];
-			for (i = 0; i <= this.gridSize; i++) {
-				var range = [];
-				for (j = 0; j < this.gridSize; j++) {
-					range.push(new Cell());
-				}
-				this.cells.push(range);
+            this.cells = [];
+            for (i = 0; i <= this.gridSize; i++) {
+                var range = [];
+                for (j = 0; j < this.gridSize; j++) {
+                    range.push(new Cell());
+                }
+                this.cells.push(range);
             }
         },
         gameTimerOut: function () {
@@ -290,7 +300,7 @@ vueApp = new Vue({
             }
         },
         rank: function () {
-			return "GM";
+            return "GM";
         },
     }
 });

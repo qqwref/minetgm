@@ -19,8 +19,8 @@ var secretColors = []; // number -> associated color
 var colorKnowledge = []; // color# (from secretColors) -> set of possible numbers
 var sets = []; // [color#, number (-1 if not certain), set of cells]
 var colorRestriction = 2; // 0 = none, 1 = random, 2 = blind
-var FIRST_TORIKAN = 180000; // PB 103.684
-var SECOND_TORIKAN = 500000; // PB 336.906
+var FIRST_TORIKAN = 180000; // PB 93.370 (9.515, 26.825, 41.665, 65.101, 93.370)
+var SECOND_TORIKAN = 500000; // PB 315.315
 
 var playing = false;
 var needOpen = 0;
@@ -209,6 +209,7 @@ function clickup(event) {
 }
 
 function death() {
+ draw();
  grade = ["F", "D", "C", "B", "A", "S", "S+", "*", "**", "***", "M", "GM?"][level]
  alert("Grade: " + grade + "\nTime: " + ((new Date() - startTime) / 1000) + "\nSplits: " + splits);
  init();
@@ -352,7 +353,14 @@ function chord(y,x) {
  if (flagged != board[y][x]) return;
  for (var i=Math.max(0, y-1); i<Math.min(h, y+2); i++) {
   for (var j=Math.max(0, x-1); j<Math.min(w, x+2); j++) {
-   if (boardKnowledge[i][j] == -1) openSquare(i,j);
+   if (boardKnowledge[i][j] == -1) {
+    if (board[i][j] == -1) {
+	 death();
+	 return;
+	} else {
+	 openSquare(i,j);
+	}
+   }
   }
  }
  draw();
