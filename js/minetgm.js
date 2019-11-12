@@ -150,26 +150,7 @@ var appData = {
 	allowFlags: true,
 	startTime: 0,
 	splits: [],
-	c: $('c').getContext('2d'), // canvas
-	
-    stats: {
-        startTime: new Date(),
-        stopTime: new Date(),
-        lastTime: new Date(),
-        correctClicks: 0,
-        wrongClicks: 0,
-        clicks: [], // array of ClickStats
-        rounds: [],
-        clear: function () {
-            this.startTime = new Date();
-            this.stopTime = new Date();
-            this.lastTime = new Date();
-            this.correctClicks = 0;
-            this.wrongClicks = 0;
-            this.clicks = [];
-            this.rounds = [];
-        },
-    }
+	c: $('c').getContext('2d') // canvas
 };
 
 Vue.directive('focus', { // https://jsfiddle.net/LukaszWiktor/cap43pdn/
@@ -237,7 +218,6 @@ vueApp = new Vue({
 			this.showNumbers = this.LEVEL_TYPES[this.level][2];
 			this.colorRestriction = this.LEVEL_TYPES[this.level][3];
 			
-			console.log("Level " + this.level);
 			console.log("Level: " + this.level + "<br>Mines: " + this.m + "<br>Flags: " + (this.allowFlags ? "yes" : "no") + "<br>Numbers: " + (this.showNumbers ? "yes" : "no") + "<br>Colors: " + (this.colorRestriction == 0 ? "normal" : (this.colorRestriction == 1 ? "random" : "no")));
  
 			if (x==-1 && y==-1) {
@@ -299,12 +279,13 @@ vueApp = new Vue({
 				event.stopPropagation();
 			}
 			var x=0, y=0;
+			var rect = $('c').getBoundingClientRect();
 			if (event.x || event.y) {
-				x = Math.floor((event.x - $('c').offsetLeft)/30);
-				y = Math.floor((event.y - $('c').offsetTop)/30);
+				x = Math.floor((event.x - rect.left)/30);
+				y = Math.floor((event.y - rect.top)/30);
 			} else {
-				x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - $('c').offsetLeft)/30);
-				y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - $('c').offsetTop)/30);
+				x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - rect.left)/30);
+				y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - rect.top)/30);
 			}
 			if (x<0 || y<0 || x>=this.w || y>=this.h) {
 				return;
@@ -531,13 +512,23 @@ vueApp = new Vue({
 						// remove known squares from set and adjust number
 						if ((opened>0 || flagged>0) && this.sets[i][1] >= 0) {
 							this.sets[i][1] -= flagged;
-							this.sets[i][2] = cells.filter(function(a) {return (this.boardKnowledge[a[0]][a[1]] == -1);});
+							this.sets[i][2] = [];
+							for (cell in cells) {
+								if (this.boardKnowledge[cell[0]][cell[1]] == -1) {
+									this.sets[i][2].push(cell);
+								}
+							}
+							this.sets[i][2] = cells.filter(function(boardKnowledge) {
+								return function(a) {return (boardKnowledge[a[0]][a[1]] == -1)}
+							}(this.boardKnowledge));
 							cells = this.sets[i][2];
 							deduction = true;
 							opened = 0;
 							flagged = 0;
 						} else if (opened>0 && this.sets[i][1] == -1) {
-							this.sets[i][2] = cells.filter(function(a) {return (this.boardKnowledge[a[0]][a[1]] != 0);});
+							this.sets[i][2] = cells.filter(function(boardKnowledge) {
+								return function(a) {return (boardKnowledge[a[0]][a[1]] != 0)}
+							}(this.boardKnowledge));
 							cells = this.sets[i][2];
 							deduction = true;
 							opened = 0;
@@ -554,7 +545,9 @@ vueApp = new Vue({
 						if (this.sets[i][1] == -1) {
 							// make sure sets[i][0] color doesn't correspond to any invalid numbers
 							var cols = this.colorKnowledge[this.secretColors.indexOf(this.sets[i][0])];
-							var cols2 = cols.filter(function(a) {return (a>=minNum && a<=maxNum);});
+							var cols2 = cols.filter(function(minNum, maxNum) {
+								return function(a) {return (a>=minNum && a<=maxNum)}
+							}(this.minNum, this.maxNum));
 							if (JSON.stringify(cols) != JSON.stringify(cols2)) {
 								this.colorKnowledge[this.secretColors.indexOf(this.sets[i][0])] = cols2;
 								deduction = true;
@@ -694,7 +687,9 @@ vueApp = new Vue({
 							for (var j=1; j<this.colorKnowledge.length; j++) {
 								if (j != i) {
 									if (this.colorKnowledge[j].indexOf(this.colorKnowledge[i][0]) > -1) {
-										this.colorKnowledge[j] = this.colorKnowledge[j].filter(function(a) {return (a!=this.colorKnowledge[i][0]);});
+										this.colorKnowledge[j] = this.colorKnowledge[j].filter(function(colorKnowledge) {
+											return function(a) {return (a!=this.colorKnowledge[i][0])}
+										}(this.colorKnowledge));
 										deduction = true;
 									}
 								}
@@ -738,33 +733,33 @@ vueApp = new Vue({
 		},
 		
 		perturb: function(starty, startx) {
-			function isFull(arr) {
-				return this.board[arr[0]][arr[1]] == -1;
+			function isFull(board, arr) {
+				return board[arr[0]][arr[1]] == -1;
 			}
-			function makeEmpty(arr) {
+			function makeEmpty(board, h, w, arr) {
 				var yy = arr[0];
 				var xx = arr[1];
-				this.board[yy][xx] = 0;
-				for (var i=Math.max(0, yy-1); i<Math.min(this.h, yy+2); i++) {
-					for (var j=Math.max(0, xx-1); j<Math.min(this.w, xx+2); j++) {
+				board[yy][xx] = 0;
+				for (var i=Math.max(0, yy-1); i<Math.min(h, yy+2); i++) {
+					for (var j=Math.max(0, xx-1); j<Math.min(w, xx+2); j++) {
 						if (i==yy && j==xx) continue;
-						if (this.board[i][j] != -1) {
-							this.board[i][j] = this.board[i][j]-1;
+						if (board[i][j] != -1) {
+							board[i][j] = board[i][j]-1;
 						} else {
-							this.board[yy][xx] = this.board[yy][xx]+1;
+							board[yy][xx] = board[yy][xx]+1;
 						}
 					}
 				}
 			}
-			function makeFull(arr) {
+			function makeFull(board, h, w, arr) {
 				var yy = arr[0];
 				var xx = arr[1];
-				this.board[yy][xx] = -1;
-				for (var i=Math.max(0, yy-1); i<Math.min(this.h, yy+2); i++) {
-					for (var j=Math.max(0, xx-1); j<Math.min(this.w, xx+2); j++) {
+				board[yy][xx] = -1;
+				for (var i=Math.max(0, yy-1); i<Math.min(h, yy+2); i++) {
+					for (var j=Math.max(0, xx-1); j<Math.min(w, xx+2); j++) {
 						if (i==yy && j==xx) continue;
-						if (this.board[i][j] != -1) {
-							this.board[i][j] = this.board[i][j]+1;
+						if (board[i][j] != -1) {
+							board[i][j] = board[i][j]+1;
 						}
 					}
 				}
@@ -818,15 +813,15 @@ vueApp = new Vue({
 				}
 			}
 			// Randomly shuffle each of these sections individually, and combine them.
-			this.shuffle(unknownBeyondBoundary);
-			this.shuffle(unknownInBoundary);
-			this.shuffle(known);
+			unknownBeyondBoundary = this.shuffle(unknownBeyondBoundary);
+			unknownInBoundary = this.shuffle(unknownInBoundary);
+			known = this.shuffle(known);
 			var combinedSquares = unknownInBoundary.concat(unknownBeyondBoundary).concat(known);
 			
 			// Count the number of full and empty squares in the perturbing set.
 			var nfull = 0, nempty = 0;
 			for (var i=0; i<set_cells.length; i++) {
-				if (isFull(set_cells[i])) {
+				if (isFull(this.board, set_cells[i])) {
 					nfull++;
 				} else {
 					nempty++;
@@ -836,7 +831,7 @@ vueApp = new Vue({
 			// Go through the squares list until we find either 'nfull' empty squares or 'nempty' full squares
 			var squarePtr = 0, nemptyList = 0, nfullList = 0;
 			for (squarePtr=0; squarePtr<combinedSquares.length; squarePtr++) {
-				if (isFull(combinedSquares[squarePtr])) {
+				if (isFull(this.board, combinedSquares[squarePtr])) {
 					nfullList++;
 				} else {
 					nemptyList++;
@@ -851,26 +846,26 @@ vueApp = new Vue({
 				// Randomly fill a random selection of our perturbing set from the empty squares
 				var cnt = 0;
 				for (var i=0; i<combinedSquares.length; i++) {
-					if (!isFull(combinedSquares[i])) {
+					if (!isFull(this.board, combinedSquares[i])) {
 						cnt++;
-						makeFull(combinedSquares[i]);
+						makeFull(this.board, this.h, this.w, combinedSquares[i]);
 					}
 				}
-				this.shuffle(set_cells);
+				set_cells = this.shuffle(set_cells);
 				for (var i=0; i<cnt; i++) {
-					makeFull(set_cells[i]);
+					makeFull(this.board, this.h, this.w, set_cells[i]);
 				}
 			} else {
 				if (nfullList == nempty && nempty>0) {
 					// Put a mine in each empty square in perturbing set and remove one from the first 'nempty' squares in the list
 					for (var i=0; i<set_cells.length; i++) {
-						if (!isFull(set_cells[i])) {
-							makeFull(set_cells[i]);
+						if (!isFull(this.board, set_cells[i])) {
+							makeFull(this.board, this.h, this.w, set_cells[i]);
 						}
 					}
 					for (var i=0; i<combinedSquares.length; i++) {
-						if (isFull(combinedSquares[i])) {
-							makeEmpty(combinedSquares[i]);
+						if (isFull(this.board, combinedSquares[i])) {
+							makeEmpty(this.board, this.h, this.w, combinedSquares[i]);
 							nempty--;
 							if (nempty==0) break;
 						}
@@ -878,13 +873,13 @@ vueApp = new Vue({
 				} else {
 					// Remove a mine from each full square in perturbing set and add one to the first 'nfull' squares in the list.
 					for (var i=0; i<set_cells.length; i++) {
-						if (isFull(set_cells[i])) {
-							makeEmpty(set_cells[i]);
+						if (isFull(this.board, set_cells[i])) {
+							makeEmpty(this.board, this.h, this.w, set_cells[i]);
 						}
 					}
 					for (var i=0; i<combinedSquares.length; i++) {
-						if (!isFull(combinedSquares[i])) {
-							makeFull(combinedSquares[i]);
+						if (!isFull(this.board, combinedSquares[i])) {
+							makeFull(this.board, this.h, this.w, combinedSquares[i]);
 							nfull--;
 							if (nfull==0) break;
 						}
@@ -902,10 +897,12 @@ vueApp = new Vue({
 				a[i - 1] = a[j];
 				a[j] = x;
 			}
+			return a
 		},
 		
 		draw: function() {
 			// draw board
+			this.c = $('c').getContext('2d');
 			this.c.font = "12px Arial"
 			for (var i=0; i<this.h; i++) {
 				for (var j=0; j<this.w; j++) {
@@ -1024,9 +1021,8 @@ vueApp = new Vue({
 		
 		
 		execDialog: function (tabName) {
-            this.death();
+            //this.death();
             this.changeDialogTab(tabName);
-            this.stats.stopTime = new Date();
             this.dialogShowed = true;
         },
 		
@@ -1055,12 +1051,12 @@ vueApp = new Vue({
         hideDialog: function () {
             this.dialogShowed = false;
             if (!this.gameStarted) {
-                this.startGame();
+                this.initGame();
             }
         },
 		
         updatePB: function() {
-            const time = this.stats.totalTime();
+            const time = 0;
             const currentPB = this.personalBests['0'];
             if (!currentPB || currentPB > time) {
                 this.personalBests['0'] = time;
