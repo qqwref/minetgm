@@ -20,33 +20,11 @@
          @keyup.esc="onEsc()"
          @keyup.enter="if(dialogShowed) hideDialog()"
          v-focus v-cloak>
-        <!--<div class="level-display"
-            v-if="gameStarted"
-        >
-            {{currentRoundNumber()}} / {{rounds}}
-        </div> -->
         <div class="minetgm">
-            
-            <!--<div v-for="r in gridRange" class="row" :style="{height: rowHeight}">
-                <div v-for="c in gridRange" class="cell"
-                     :style="{width: colWidth, fontSize: cellFontSize }"
-                     @mouseover="setHoveredCell(r, c, $event)"
-                     @mouseleave="hoveredCell = [-1, -1]"
-                     v-on:mousedown="setClickedCell(r, c, $event)"
-                     v-on:mouseup="setUnclickedCell(r, c, $event)"
-                    >
-                    <span :class="[cells[r][c].cssClasses]"
-                          :style="cells[r][c].colorStyle"
-                          style="cursor: default;">
-                        {{ cells[r][c].symbol }}
-                    </span>
-                </div>
-            </div>
-            -->
             
             <table>
             <tr height="150px">
-             <td width="500px">
+             <td width="480px">
               <table style="width: 100%; height: 150px;" class="digital_font">
                <tr height="100%">
                 <td width="30%" style="text-align: left; vertical-align: bottom; color: #f00">045</td>
@@ -57,9 +35,9 @@
              </td>
              <td class="digital_font" style="width: 200px; vertical-align: middle; text-align: center;">GRADE<br><div style="margin: 0 auto; text-align: center; border: 1px solid black; min-width: 60px; width: 60px; max-height: 60px; height: 60px;">GM</div></td>
             </tr>
-            <tr height="500px">
-             <td width="500px">
-              <canvas width="500px" height="500px" id="c"></canvas>
+            <tr height="480px">
+             <td width="480px">
+              <canvas width="480px" height="480px" id="c"></canvas>
              </td>
              <td width="200px" style="padding-top: 70px; vertical-align: top; text-align: center;" class="digital_font">MODE<br><img src="no_flag.png" /><br><img src="no_number.png" /><br><img src="no_color.png" /></td>
             </tr>
