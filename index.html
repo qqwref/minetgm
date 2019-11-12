@@ -28,7 +28,7 @@
               <table style="width: 100%; height: 150px;" class="digital_font">
                <tr height="100%">
                 <td width="30%" style="text-align: left; vertical-align: bottom; color: #f00">045</td>
-                <td width="40%" style="text-align: center; vertical-align: middle; font-size: 120%;">LEVEL 3</td>
+                <td width="40%" style="text-align: center; vertical-align: middle; font-size: 120%;">LEVEL {{level+1}}</td>
                 <td width="30%" style="text-align: right; vertical-align: bottom; color: #f00">063</td>
                </tr>
               </table>
@@ -83,44 +83,24 @@
                     <table class="w3-table-all w3-large">
                         <tr>
                             <td>Time</td>
-                            <td>{{ stats.resultTimeString() }}</td>
+                            <td>{{ finalTime }}</td>
                         </tr>
-                        <tr
-                            :style="{ fontWeight: stats.totalTime() === personalBests['0'] ? 'bold' : 'normal' }"
-                        >
+                        <tr>
                             <td>Personal Best</td>
-                            <td>{{ pbTimeString() }}</td>
+                            <td>N/A</td>
                         </tr>
                         <tr>
                             <td>Rank</td>
-                            <td>{{ rank() }}</td>
+                            <td>GM</td>
                         </tr>
                     </table>
-                    <div class="w3-row" v-if="stats.rounds.length === parseInt(rounds)">
-                        <div class="w3-row w3-col"
-                             :class="{'w3-half': parseInt(rounds) > 1}"
-                             style="margin-top: 5px; overflow-y:scroll; overflow-x:hidden; max-height:250px;">
-                            <table v-for="round in parseInt(rounds)" class="w3-table-all w3-hoverable w3-centered">
-                                <thead>
-                                    <tr class="w3-light-grey">
-                                        <th>Round</th>
-                                        <th>Time</th>
-                                    </tr>
-                                </thead>
-                                <tr v-for="round in parseInt(rounds)" :class="{'w3-text-red': stat.err}">
-                                    <td>{{round}}</td>
-                                    <td>{{stats.time_for_round(round)}}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
                 </div>
 
                 <footer class="w3-container w3-light-grey w3-center">
                     <button type="button"
                             class="w3-btn w3-indigo w3-text-white w3-xlarge"
                             style="width: 80%; margin: 10px;"
-                            @click="hideDialog(); initGame()"
+                            @click="hideDialog();"
                             ref="btn">
                         Start Game
                     </button>
