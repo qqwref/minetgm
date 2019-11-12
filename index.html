@@ -39,7 +39,7 @@
              <td width="480px">
               <canvas width="480px" height="480px" id="c"></canvas>
              </td>
-             <td width="200px" style="padding-top: 70px; vertical-align: top; text-align: center;" class="digital_font">MODE<br><img src="no_flag.png" /><br><img src="no_number.png" /><br><img src="no_color.png" /></td>
+             <td width="200px" style="padding-top: 70px; vertical-align: top; text-align: center;" class="digital_font">MODE<br><img v-bind:src='allowFlags ? "blank.png" : "no_flag.png"' /><br><img v-bind:src='showNumbers ? "blank.png" : "no_number.png"' /><br><img v-bind:src='colorRestriction == 0 ? "blank.png" : (colorRestriction == 1 ? "random_color.png" : "no_color.png")' /></td>
             </tr>
             </table>
             

@@ -88,7 +88,7 @@ var appData = {
     secretColors: [], // number -> associated color
     colorKnowledge: [], // color# (from secretColors) -> set of possible numbers
     sets: [], // [color#, number (-1 if not certain), set of cells]
-    colorRestriction: 2, // 0 = none, 1 = random, 2 = blind
+    colorRestriction: 0, // 0 = none, 1 = random, 2 = blind
     
     // Mines, flags, numbers, color restriction
     LEVEL_TYPES: [
@@ -111,7 +111,7 @@ var appData = {
     playing: false,
     needOpen: 0,
     level: 0,
-    showNumbers: false,
+    showNumbers: true,
     allowFlags: true,
     startTime: 0,
     finalTime: 0,
