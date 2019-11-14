@@ -15,7 +15,7 @@
     </style>
 </head>
 <body oncontextmenu="return false;">
-   <div id="app" style="width: 700px;" class="wrapper w3-container w3-padding-0 w3-margin-0"
+   <div id="app" style="width: 660px;" class="wrapper w3-container w3-padding-0 w3-margin-0"
          tabindex=-1
          @keyup.esc="onEsc()"
          @keyup.enter="if(dialogShowed) hideDialog()"
@@ -25,11 +25,11 @@
             <table>
             <tr height="150px">
              <td width="480px">
-              <table style="width: 100%; height: 150px;" class="digital_font">
+              <table style="height: 150px;" class="digital_font">
                <tr height="100%">
-                <td width="30%" style="text-align: left; vertical-align: bottom; color: #f00">045</td>
-                <td width="40%" style="text-align: center; vertical-align: middle; font-size: 120%;">LEVEL {{level+1}}</td>
-                <td width="30%" style="text-align: right; vertical-align: bottom; color: #f00">063</td>
+                <td width="100px" style="padding-left: 10px; text-align: left; vertical-align: bottom; color: #f00">{{("00" + remainingMines).slice(-3)}}</td>
+                <td width="280px" style="text-align: center; vertical-align: middle; font-size: 120%;">{{levelName}}</td>
+                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #f00">{{("00" + integerTime).slice(-3)}}</td>
                </tr>
               </table>
              </td>

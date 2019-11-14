@@ -13,8 +13,13 @@
   src: url(./DS-DIGI.TTF) format("truetype");
 }
 
+@font-face {
+  font-family: "Liquid Crystal";
+  src: url(./LiquidCrystal-Normal.otf) format("truetype");
+}
+
 .digital_font {
- font-family: "DS-Digital", sans-serif;
+ font-family: "Liquid Crystal", sans-serif;
  font-size: 40px;
 }
 

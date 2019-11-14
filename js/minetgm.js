@@ -80,7 +80,9 @@ var appData = {
     
     h: 16, // height
     w: 16, // width
-    m: 99, // mines
+    m: 40, // mines
+    remainingMines: 40,
+    integerTime: 0,
     board: [], // h*w, -1 = mine, 0-8 = square
     boardKnowledge: [], // h*w, -1 = unknown, 0 = clear, 1 = mine
     colors: ["white", "black", "#888", "red", "blue", "green", "yellow", "orange", "purple", "#003", "#030", "#300", "pink"],
@@ -114,7 +116,9 @@ var appData = {
     showNumbers: true,
     allowFlags: true,
     startTime: 0,
+    timerInteval: null,
     finalTime: 0,
+    levelName: "LEVEL 1",
     splits: [],
     c: $('c').getContext('2d') // canvas
 };
@@ -158,12 +162,18 @@ vueApp = new Vue({
             $('c').addEventListener("mouseup", this.clickup, false);
             
             this.level = -1;
+            this.levelName = "LEVEL 1";
             this.splits = [];
             this.drawEmpty();
         },
         
         nextLevel: function(y, x) {
             this.level++;
+            if (this.level == this.LEVEL_TYPES.length) {
+                this.levelName = "BONUS";
+            } else {
+                this.levelName = "LEVEL " + (this.level + 1);
+            }
             if (this.level > 0) {
                 this.splits = this.splits.concat(new Date() - this.startTime);
             }
@@ -173,6 +183,7 @@ vueApp = new Vue({
             }
             
             this.m = this.LEVEL_TYPES[this.level][0];
+            this.remainingMines = this.m;
             this.allowFlags = this.LEVEL_TYPES[this.level][1];
             this.showNumbers = this.LEVEL_TYPES[this.level][2];
             this.colorRestriction = this.LEVEL_TYPES[this.level][3];
@@ -190,7 +201,13 @@ vueApp = new Vue({
             this.openSquare(y,x);
             this.playing = true;
 
-            this.draw();    
+            this.draw();
+            this.timerInterval = setInterval(this.updateTimer, 10);
+        },
+        
+        updateTimer: function() {
+            time = new Date();
+            this.integerTime = Math.floor((time - this.startTime) / 1000);
         },
         
         generateBoard: function(x,y) {
@@ -265,9 +282,11 @@ vueApp = new Vue({
             } else { // right click
                 if (!this.allowFlags) return;
                 if (this.boardKnowledge[y][x] == 1) { // flagged
+                    this.remainingMines += 1;
                     this.boardKnowledge[y][x] = -1;
                     this.draw();
                 } else if (this.boardKnowledge[y][x] == -1) { // flag
+                    this.remainingMines -= 1;
                     this.boardKnowledge[y][x] = 1;
                     this.draw();
                 }
@@ -430,6 +449,7 @@ vueApp = new Vue({
                 }
             }
             if (flagged != this.board[y][x]) return;
+            var curLevel = this.level;
             for (var i=Math.max(0, y-1); i<Math.min(this.h, y+2); i++) {
                 for (var j=Math.max(0, x-1); j<Math.min(this.w, x+2); j++) {
                     if (this.boardKnowledge[i][j] == -1) {
@@ -438,6 +458,7 @@ vueApp = new Vue({
                             return;
                         } else {
                             this.openSquare(i,j);
+                            if (this.level != curLevel) return;
                         }
                     }
                 }
@@ -995,6 +1016,7 @@ vueApp = new Vue({
         
         execDialog: function (tabName) {
             this.playing = false;
+            clearInterval(this.timerInterval);
             this.drawEmpty();
             this.changeDialogTab(tabName);
             this.dialogShowed = true;
