@@ -120,6 +120,8 @@ var appData = {
     finalTime: 0,
     levelName: "LEVEL 1",
     splits: [],
+    grade: "",
+    personalBests: [[0,0],[0,0],[0,0],[0,0],[0,0]],
     c: $('c').getContext('2d') // canvas
 };
 
@@ -139,8 +141,9 @@ vueApp = new Vue({
     data: appData,
     created: function () {
         this.initGame();
-        appData.personalBests =
-            JSON.parse(localStorage.getItem(PB_KEY)) || {};
+        localBests = JSON.parse(localStorage.getItem(PB_KEY)) || [];
+        if (localBests.length > 0)
+            appData.personalBests = localBests;
     },
     mounted: function () {
         this.execDialog('settings');
@@ -164,6 +167,7 @@ vueApp = new Vue({
             this.level = -1;
             this.levelName = "LEVEL 1";
             this.splits = [];
+            this.grade = "";
             this.drawEmpty();
         },
         
@@ -174,6 +178,7 @@ vueApp = new Vue({
             } else {
                 this.levelName = "LEVEL " + (this.level + 1);
             }
+            this.grade = this.GRADES[this.level];
             if (this.level > 0) {
                 this.splits = this.splits.concat(new Date() - this.startTime);
             }
@@ -303,7 +308,7 @@ vueApp = new Vue({
 
         death: function() {
             this.draw();
-            this.finalTime = (new Date() - this.startTime) / 1000;
+            this.finalTime = (new Date() - this.startTime);
             this.updatePB();
             grade = this.GRADES[this.level];
             //alert("Grade: " + grade + "\nTime: " + ((new Date() - this.startTime) / 1000) + "\nSplits: " + this.splits);
@@ -311,7 +316,7 @@ vueApp = new Vue({
         },
         
         victory: function() {
-            this.finalTime = (new Date() - this.startTime) / 1000;
+            this.finalTime = (new Date() - this.startTime);
             this.updatePB();
             this.execDialog('stats');
         },
@@ -1053,17 +1058,20 @@ vueApp = new Vue({
         },
         
         updatePB: function() {
-            /*
-            const time = 0;
-            const currentPB = this.personalBests['0'];
-            if (!currentPB || currentPB > time) {
-                this.personalBests['0'] = time;
-                localStorage.setItem(
-                    PB_KEY,
-                    JSON.stringify(this.personalBests),
-                );
-            }
-            */
+            this.personalBests.push([this.level, this.finalTime]);
+            console.log(this.personalBests);
+            this.personalBests = this.personalBests.sort(
+                function(a,b) {
+                    if (a[0] == b[0]) return a[1] - b[1]; 
+                    return b[0] - a[0]; // higher rank is better
+                }
+            );
+            this.personalBests = this.personalBests.slice(0, 5);
+            console.log(this.personalBests);
+            localStorage.setItem(
+                PB_KEY,
+                JSON.stringify(this.personalBests),
+            );
         }
     }
 });

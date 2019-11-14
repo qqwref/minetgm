@@ -33,7 +33,7 @@
                </tr>
               </table>
              </td>
-             <td class="digital_font" style="width: 200px; vertical-align: middle; text-align: center;">GRADE<br><div style="margin: 0 auto; text-align: center; border: 1px solid black; min-width: 60px; width: 60px; max-height: 60px; height: 60px;">GM</div></td>
+             <td class="digital_font" style="width: 200px; vertical-align: middle; text-align: center;">GRADE<br><div style="margin: 0 auto; text-align: center; border: 1px solid black; min-width: 60px; width: 60px; max-height: 60px; height: 60px; font-size: 90%">{{grade}}</div></td>
             </tr>
             <tr height="480px">
              <td width="480px">
@@ -62,19 +62,29 @@
                     <button class="tablink w3-bar-item w3-button"
                             @click="changeDialogTab('settings')"
                             :class="[settingsTabVisible  ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
-                        Settings
+                        High Scores
                     </button>
                     <button class="tablink w3-bar-item w3-button"
                             @click="changeDialogTab('stats')"
                             :class="[statsTabVisible ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
-                        Stats
+                        Last Attempt
                     </button>
                 </div>
 
                 <div class="w3-container w3-margin w3-padding-0" v-if="settingsTabVisible">
                     <div class="w3-row" >
                         <div class="w3-col">
-                            High Score: S
+                            <table class="w3-table-all w3-large">
+                            <tr>
+                                <td>Grade</td>
+                                <td>Time</td>
+                            </tr>
+                            <tr v-for="r in [0,1,2,3,4]">
+                                <td>{{GRADES[personalBests[r][0]]}}</td>
+                                <td>{{timeString(personalBests[r][1])}}</td>
+                            </tr>
+                            </table>
+                        </tr>
                         </div>
                     </div>
                 </div>
@@ -83,15 +93,14 @@
                     <table class="w3-table-all w3-large">
                         <tr>
                             <td>Time</td>
-                            <td>{{ finalTime }}</td>
+                            <td>{{timeString(finalTime)}}</td>
                         </tr>
+                        <tr>
+                            <td>Grade</td>
+                            <td>{{grade}}</td>
                         <tr>
                             <td>Personal Best</td>
-                            <td>N/A</td>
-                        </tr>
-                        <tr>
-                            <td>Rank</td>
-                            <td>GM</td>
+                            <td>{{GRADES[personalBests[0][0]]}} in {{timeString(personalBests[0][1])}}</td>
                         </tr>
                     </table>
                 </div>
