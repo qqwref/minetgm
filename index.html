@@ -29,7 +29,7 @@
                <tr height="100%">
                 <td width="100px" style="padding-left: 10px; text-align: left; vertical-align: bottom; color: #800">{{("00" + remainingMines).slice(-3)}}</td>
                 <td width="280px" style="text-align: center; vertical-align: middle; font-size: 120%;">{{levelName}}</td>
-                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #800" v-bind:style="{ color: '#' + (level>0 ? 'f00' : '800') }">{{("00" + integerTime).slice(-3)}}</td>
+                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #800" v-bind:style="{ color: '#' + (level>9 ? 'f00' : '800') }">{{("00" + integerTime).slice(-3)}}</td>
                </tr>
               </table>
              </td>

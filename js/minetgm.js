@@ -424,7 +424,7 @@ vueApp = new Vue({
                             this.death();
                         } else {
                             if (this.level == 9) {
-                                this.bonusLevelTime = new Date() - this.startTime;
+                                this.bonusLevelTime = new Date();
                             }
                             this.nextLevel(y,x);
                         }
@@ -610,6 +610,7 @@ vueApp = new Vue({
                                 if (!((this.sets[i][1]==-1 && this.sets[j][1]==-1 && this.sets[i][0]==this.sets[j][0]) || (this.sets[i][1]>-1 && this.sets[j][1]>-1))) continue;
                                 this.sets[j][2] = jMinusi;
                                 this.sets[j][1] -= this.sets[i][1];
+                                // sets[j][0]?
                                 deduction = true;
                             // if i contains j
                             } else if (jMinusi.length == 0) {
@@ -617,6 +618,7 @@ vueApp = new Vue({
                                 if (!((this.sets[i][1]==-1 && this.sets[j][1]==-1 && this.sets[i][0]==this.sets[j][0]) || (this.sets[i][1]>-1 && this.sets[j][1]>-1))) continue;
                                 this.sets[i][2] = iMinusj;
                                 this.sets[i][1] -= this.sets[j][1];
+                                // sets[j][0]?
                                 deduction = true;
                             // 2-1 with i bigger
                             } else if (this.sets[i][1] != -1 && this.sets[j][1] != -1 && this.sets[i][1] - this.sets[j][1] == iMinusj.length) {
