@@ -108,7 +108,7 @@ var appData = {
     ],
     FIRST_TORIKAN: 180000, // PB 93.370 (9.515, 26.825, 41.665, 65.101, 93.370)
     SECOND_TORIKAN: 500000, // PB 315.315
-    GRADES: ["F", "D", "C", "B", "A", "S", "S+", "*", "**", "***", "M", "GM"],
+    GRADES: ["F", "D", "C", "B", "A", "S", "S+", "⭐", "🌟", "✨", "M", "GM"],
 
     playing: false,
     needOpen: 0,
@@ -122,6 +122,7 @@ var appData = {
     splits: [],
     grade: "",
     personalBests: [[0,0],[0,0],[0,0],[0,0],[0,0]],
+    bonusLevelTime: 0,
     c: $('c').getContext('2d') // canvas
 };
 
@@ -212,7 +213,19 @@ vueApp = new Vue({
         
         updateTimer: function() {
             time = new Date();
-            this.integerTime = Math.floor((time - this.startTime) / 1000);
+            if (!this.playing) {
+                clearInterval(this.timerInterval);
+                return;
+            }
+            if (this.level < 10) {
+                this.integerTime = Math.floor((time - this.startTime) / 1000);
+            } else {
+                var remainingTime = 60 - ((time - this.bonusLevelTime) / 1000);
+                this.integerTime = Math.ceil(remainingTime);
+                if (remainingTime < 0) {
+                    this.death();
+                }
+            }
         },
         
         generateBoard: function(x,y) {
@@ -410,6 +423,9 @@ vueApp = new Vue({
                             this.splits = this.splits.concat(curTime);
                             this.death();
                         } else {
+                            if (this.level == 9) {
+                                this.bonusLevelTime = new Date() - this.startTime;
+                            }
                             this.nextLevel(y,x);
                         }
                         return;
@@ -1030,12 +1046,9 @@ vueApp = new Vue({
         changeDialogTab: function (tabName) {
             this.statsTabVisible = false;
             this.settingsTabVisible = false;
-            this.mousemapTabVisible = false;
 
             if (tabName === 'stats') {
                 this.statsTabVisible = true;
-            } else if (tabName === 'mousemap') {
-                this.mousemapTabVisible = true; // see 'updated' section
             } else {
                 this.settingsTabVisible = true;
             }

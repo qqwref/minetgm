@@ -27,9 +27,9 @@
              <td width="480px">
               <table style="height: 150px;" class="digital_font">
                <tr height="100%">
-                <td width="100px" style="padding-left: 10px; text-align: left; vertical-align: bottom; color: #f00">{{("00" + remainingMines).slice(-3)}}</td>
+                <td width="100px" style="padding-left: 10px; text-align: left; vertical-align: bottom; color: #800">{{("00" + remainingMines).slice(-3)}}</td>
                 <td width="280px" style="text-align: center; vertical-align: middle; font-size: 120%;">{{levelName}}</td>
-                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #f00">{{("00" + integerTime).slice(-3)}}</td>
+                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #800" v-bind:style="{ color: '#' + (level>0 ? 'f00' : '800') }">{{("00" + integerTime).slice(-3)}}</td>
                </tr>
               </table>
              </td>
@@ -76,12 +76,14 @@
                         <div class="w3-col">
                             <table class="w3-table-all w3-large">
                             <tr>
+                                <td></td>
                                 <td>Grade</td>
                                 <td>Time</td>
                             </tr>
                             <tr v-for="r in [0,1,2,3,4]">
-                                <td>{{GRADES[personalBests[r][0]]}}</td>
-                                <td>{{timeString(personalBests[r][1])}}</td>
+                                <td>#{{r+1}}</td>
+                                <td>{{personalBests[r][0] == 0 ? "" : GRADES[personalBests[r][0]]}}</td>
+                                <td>{{personalBests[r][1] == 0 ? "" : timeString(personalBests[r][1])}}</td>
                             </tr>
                             </table>
                         </tr>
@@ -100,7 +102,7 @@
                             <td>{{grade}}</td>
                         <tr>
                             <td>Personal Best</td>
-                            <td>{{GRADES[personalBests[0][0]]}} in {{timeString(personalBests[0][1])}}</td>
+                            <td>{{personalBests[0][0] == 0 ? "" : GRADES[personalBests[0][0]] + " in " + timeString(personalBests[0][1])}}</td>
                         </tr>
                     </table>
                 </div>
