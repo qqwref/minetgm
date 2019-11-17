@@ -118,6 +118,7 @@ var appData = {
     startTime: 0,
     timerInteval: null,
     finalTime: 0,
+    generationTime: 0,
     levelName: "LEVEL 1",
     splits: [],
     grade: "",
@@ -160,6 +161,7 @@ vueApp = new Vue({
         initGame: function () {
             this.playing = false;
             this.startTime = new Date();
+            this.generationTime = 0;
             this.finalTime = 0;
             $('c').height = 500;
             $('c').width = 500;
@@ -183,7 +185,7 @@ vueApp = new Vue({
             }
             this.grade = this.GRADES[this.level];
             if (this.level > 0) {
-                this.splits = this.splits.concat(new Date() - this.startTime);
+                this.splits = this.splits.concat(this.currentTime());
             }
             if (this.level >= this.LEVEL_TYPES.length) {
                 this.victory();
@@ -195,14 +197,15 @@ vueApp = new Vue({
             this.allowFlags = this.LEVEL_TYPES[this.level][1];
             this.showNumbers = this.LEVEL_TYPES[this.level][2];
             this.colorRestriction = this.LEVEL_TYPES[this.level][3];
-            
-            console.log("Level: " + this.level + "<br>Mines: " + this.m + "<br>Flags: " + (this.allowFlags ? "yes" : "no") + "<br>Numbers: " + (this.showNumbers ? "yes" : "no") + "<br>Colors: " + (this.colorRestriction == 0 ? "normal" : (this.colorRestriction == 1 ? "random" : "no")));
  
             if (x==-1 && y==-1) {
                 x = Math.floor(Math.random()*this.w);
                 y = Math.floor(Math.random()*this.h);
             }
+            var preGenerate = new Date();
             this.generateBoard(x, y);
+            console.log("Generation took " + (new Date() - preGenerate) + "ms");
+            this.generationTime += (new Date() - preGenerate); // add generation time for this part
  
             this.needOpen = this.h*this.w - this.m;
             this.initBoardKnowledge();
@@ -214,20 +217,27 @@ vueApp = new Vue({
         },
         
         updateTimer: function() {
-            time = new Date();
             if (!this.playing) {
                 clearInterval(this.timerInterval);
                 return;
             }
             if (this.level < 10) {
-                this.integerTime = Math.floor((time - this.startTime) / 1000);
+                this.integerTime = Math.floor(this.currentTime() / 1000);
             } else {
-                var remainingTime = 60 - ((time - this.bonusLevelTime) / 1000);
+                var remainingTime = 60 - (this.currentTime(bonusLevelTime) / 1000);
                 this.integerTime = Math.ceil(remainingTime);
                 if (remainingTime < 0) {
                     this.death();
                 }
             }
+        },
+        
+        currentTime: function(startTime) {
+            if (typeof startTime === 'undefined') {
+                // no parameter passed in
+                startTime = this.startTime - (-this.generationTime);
+            }
+            return new Date() - startTime;
         },
         
         generateBoard: function(x,y) {
@@ -244,6 +254,7 @@ vueApp = new Vue({
             this.chooseSecretColors();
 
             // init knowledge
+            console.log("Generating level " + this.level);
             for (var ii=0; ii<10; ii++) {
                 for (var i=0; i<1000; i++) {
                     this.initKnowledge();
@@ -323,16 +334,18 @@ vueApp = new Vue({
 
         death: function() {
             this.draw();
+            console.log("Splits: [" + this.splits + "]");
             this.gameOverMessage = "Game Over";
-            this.finalTime = (new Date() - this.startTime);
+            this.finalTime = this.currentTime();
             this.updatePB();
             this.execDialog('stats');
         },
         
         victory: function() {
             this.draw();
+            console.log("Splits: [" + this.splits + "]");
             this.gameOverMessage = "Congratulations!";
-            this.finalTime = (new Date() - this.startTime);
+            this.finalTime = this.currentTime();
             this.updatePB();
             this.execDialog('stats');
         },
@@ -416,7 +429,7 @@ vueApp = new Vue({
                     this.boardKnowledge[element[0]][element[1]] = 0;
                     this.needOpen--;
                     if (this.needOpen == 0 && this.playing) {
-                        var curTime = (new Date() - this.startTime);
+                        var curTime = this.currentTime();
                         if (this.level == 4 && (curTime > this.FIRST_TORIKAN)) {
                             this.level++;
                             this.grade = this.GRADES[this.level];
@@ -1065,7 +1078,6 @@ vueApp = new Vue({
         
         updatePB: function() {
             this.personalBests.push([this.level, this.finalTime]);
-            console.log(this.personalBests);
             this.personalBests = this.personalBests.sort(
                 function(a,b) {
                     if (a[0] == b[0]) return a[1] - b[1]; 
@@ -1073,7 +1085,6 @@ vueApp = new Vue({
                 }
             );
             this.personalBests = this.personalBests.slice(0, 5);
-            console.log(this.personalBests);
             localStorage.setItem(
                 PB_KEY,
                 JSON.stringify(this.personalBests),
