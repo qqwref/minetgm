@@ -123,6 +123,7 @@ var appData = {
     grade: "",
     personalBests: [[0,0],[0,0],[0,0],[0,0],[0,0]],
     bonusLevelTime: 0,
+    gameOverMessage: "",
     c: $('c').getContext('2d') // canvas
 };
 
@@ -169,6 +170,7 @@ vueApp = new Vue({
             this.levelName = "LEVEL 1";
             this.splits = [];
             this.grade = "";
+            this.gameOverMessage = "";
             this.drawEmpty();
         },
         
@@ -321,14 +323,15 @@ vueApp = new Vue({
 
         death: function() {
             this.draw();
+            this.gameOverMessage = "Game Over";
             this.finalTime = (new Date() - this.startTime);
             this.updatePB();
-            grade = this.GRADES[this.level];
-            //alert("Grade: " + grade + "\nTime: " + ((new Date() - this.startTime) / 1000) + "\nSplits: " + this.splits);
             this.execDialog('stats');
         },
         
         victory: function() {
+            this.draw();
+            this.gameOverMessage = "Congratulations!";
             this.finalTime = (new Date() - this.startTime);
             this.updatePB();
             this.execDialog('stats');
@@ -416,12 +419,14 @@ vueApp = new Vue({
                         var curTime = (new Date() - this.startTime);
                         if (this.level == 4 && (curTime > this.FIRST_TORIKAN)) {
                             this.level++;
+                            this.grade = this.GRADES[this.level];
                             this.splits = this.splits.concat(curTime);
-                            this.death();
+                            this.victory();
                         } else if (this.level == 9 && (curTime > this.SECOND_TORIKAN)) {
                             this.level++;
+                            this.grade = this.GRADES[this.level];
                             this.splits = this.splits.concat(curTime);
-                            this.death();
+                            this.victory();
                         } else {
                             if (this.level == 9) {
                                 this.bonusLevelTime = new Date();
