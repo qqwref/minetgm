@@ -85,8 +85,8 @@ var appData = {
     integerTime: 0,
     board: [], // h*w, -1 = mine, 0-8 = square
     boardKnowledge: [], // h*w, -1 = unknown, 0 = clear, 1 = mine
-    colors: ["white", "black", "#888", "red", "blue", "green", "yellow", "orange", "purple", "#003", "#030", "#300", "pink"],
-    defaultColors: ["#DDDDDD", "#0000FF", "#008000", "#FF0000", "#000080", "#800000", "#008080", "#000000", "#808080"], // colors of 0-8
+    colors: ["#fff", "#000", "#888", "#f00", "#0f0", "#00f", "#ff0", "#f80", "#f0f", "#007", "#050", "#700", "#fbb", "#0ff"],
+    defaultColors: ["#FFFFFF", "#0000FF", "#008000", "#FF0000", "#000080", "#800000", "#008080", "#000000", "#808080"], // colors of 0-8
     secretColors: [], // number -> associated color
     colorKnowledge: [], // color# (from secretColors) -> set of possible numbers
     sets: [], // [color#, number (-1 if not certain), set of cells]
