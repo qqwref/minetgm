@@ -224,7 +224,7 @@ vueApp = new Vue({
             if (this.level < 10) {
                 this.integerTime = Math.floor(this.currentTime() / 1000);
             } else {
-                var remainingTime = 60 - (this.currentTime(bonusLevelTime) / 1000);
+                var remainingTime = 60 - (this.currentTime(this.bonusLevelTime) / 1000);
                 this.integerTime = Math.ceil(remainingTime);
                 if (remainingTime < 0) {
                     this.death();
@@ -954,6 +954,7 @@ vueApp = new Vue({
                             this.drawSquare(this.defaultColors[0], j, i);
                         }
                     } else if (this.boardKnowledge[i][j] == 1) {
+                        this.drawButton("#fff", "#ccc", "#888", j, i);
                         this.drawFlag(j, i);
                     }
                 }
@@ -1026,16 +1027,32 @@ vueApp = new Vue({
         },
         
         drawFlag: function(rawX, rawY) {
-            // TODO
             var x = rawX * this.cellSize, y = rawY * this.cellSize;
-            var smallSize = this.cellSize / 3;
+            var smallSize = this.cellSize / 60;
+            this.c.strokeStyle = "#000";
+            this.c.fillStyle = "#000";
+            this.c.beginPath();
+            this.c.moveTo(x + 16 * smallSize, y + 48 * smallSize);
+            this.c.lineTo(x + 44 * smallSize, y + 48 * smallSize);
+            this.c.lineTo(x + 44 * smallSize, y + 44 * smallSize);
+            this.c.lineTo(x + 36 * smallSize, y + 44 * smallSize);
+            this.c.lineTo(x + 36 * smallSize, y + 40 * smallSize);
+            this.c.lineTo(x + 31 * smallSize, y + 40 * smallSize);
+            this.c.lineTo(x + 31 * smallSize, y + 24 * smallSize);
+            this.c.lineTo(x + 29 * smallSize, y + 24 * smallSize);
+            this.c.lineTo(x + 29 * smallSize, y + 40 * smallSize);
+            this.c.lineTo(x + 24 * smallSize, y + 40 * smallSize);
+            this.c.lineTo(x + 24 * smallSize, y + 44 * smallSize);
+            this.c.lineTo(x + 16 * smallSize, y + 44 * smallSize);
+            this.c.closePath();
+            this.c.stroke();
+            this.c.fill();
             this.c.strokeStyle = "#f00";
             this.c.fillStyle = "#f00";
             this.c.beginPath();
-            this.c.moveTo(x + smallSize, y + smallSize);
-            this.c.lineTo(x + 2 * smallSize, y + smallSize);
-            this.c.lineTo(x + 2 * smallSize, y + 2 * smallSize);
-            this.c.lineTo(x + smallSize, y + 2 * smallSize);
+            this.c.moveTo(x + 31 * smallSize, y + 32 * smallSize);
+            this.c.lineTo(x + 31 * smallSize, y + 12 * smallSize);
+            this.c.lineTo(x + 16 * smallSize, y + 22 * smallSize);
             this.c.closePath();
             this.c.stroke();
             this.c.fill();
