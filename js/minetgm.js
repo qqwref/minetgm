@@ -277,11 +277,11 @@ vueApp = new Vue({
             var x=0, y=0;
             var rect = $('c').getBoundingClientRect();
             if (event.x || event.y) {
-                x = Math.floor((event.x - rect.left)/30);
-                y = Math.floor((event.y - rect.top)/30);
+                x = Math.floor((event.x - rect.left)/this.cellSize);
+                y = Math.floor((event.y - rect.top)/this.cellSize);
             } else {
-                x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - rect.left)/30);
-                y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - rect.top)/30);
+                x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - rect.left)/this.cellSize);
+                y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - rect.top)/this.cellSize);
             }
             if (x<0 || y<0 || x>=this.w || y>=this.h) {
                 return;
@@ -921,7 +921,7 @@ vueApp = new Vue({
             this.c.font = "12px Arial"
             for (var i=0; i<this.h; i++) {
                 for (var j=0; j<this.w; j++) {
-                    this.drawSquare("#ccc", j*30, i*30, 30);
+                    this.drawSquare("#ccc", j, i);
                 }
             }
             
@@ -929,19 +929,19 @@ vueApp = new Vue({
                 for (var j=0; j<this.w; j++) {
                     // -1 = unknown, 0 = clear, 1 = mine
                     if (this.boardKnowledge[i][j] == -1) { //unknown
-                        this.drawButton("#fff", "#ccc", "#888", j*30, i*30, 30);
+                        this.drawButton("#fff", "#ccc", "#888", j, i);
                     } else if (this.boardKnowledge[i][j] == 0) {
                         if (this.colorRestriction == 0 && this.showNumbers && this.board[i][j] > 0) {
-                            this.drawNumber(this.board[i][j], this.defaultColors[this.board[i][j]], j*30, i*30, 30);
+                            this.drawNumber(this.board[i][j], this.defaultColors[this.board[i][j]], j, i);
                         } else if (this.colorRestriction == 0 && !this.showNumbers) {
-                            this.drawSquare(this.defaultColors[this.board[i][j]], j*30, i*30, 30);
+                            this.drawSquare(this.defaultColors[this.board[i][j]], j, i);
                         } else if (this.colorRestriction == 1) {
-                            this.drawSquare(this.colors[this.secretColors[this.board[i][j]]], j*30, i*30, 30);
+                            this.drawSquare(this.colors[this.secretColors[this.board[i][j]]], j, i);
                         } else if (this.colorRestriction == 2) {
-                            this.drawSquare(this.defaultColors[0], j*30, i*30, 30);
+                            this.drawSquare(this.defaultColors[0], j, i);
                         }
                     } else if (this.boardKnowledge[i][j] == 1) {
-                        this.drawFlag(j*30, i*30);
+                        this.drawFlag(j, i);
                     }
                 }
             }
@@ -951,95 +951,81 @@ vueApp = new Vue({
             this.c = $('c').getContext('2d');
             for (var i=0; i<this.h; i++) {
                 for (var j=0; j<this.w; j++) {
-                    this.drawButton("#fff", "#ccc", "#888", j*30, i*30, 30);
+                    this.drawButton("#fff", "#ccc", "#888", j, i);
                 }
             }
         },
 
-        drawSquare: function(color, x, y, size) {
+        drawSquare: function(color, rawX, rawY) {
+            var x = rawX * this.cellSize, y = rawY * this.cellSize;
             this.c.strokeStyle = "#000";
             this.c.fillStyle = color;
             this.c.beginPath();
             this.c.moveTo(x, y);
-            this.c.lineTo(x+size, y);
-            this.c.lineTo(x+size, y+size);
-            this.c.lineTo(x, y+size);
+            this.c.lineTo(x + this.cellSize, y);
+            this.c.lineTo(x + this.cellSize, y + this.cellSize);
+            this.c.lineTo(x, y + this.cellSize);
             this.c.closePath();
             this.c.fill();
             this.c.stroke();
         },
         
-        drawNumber: function(num, color, x, y, size) {
-            this.c.font = "Bold 24px Arial";
+        drawNumber: function(num, color, rawX, rawY) {
+            var x = rawX * this.cellSize, y = rawY * this.cellSize;
+            this.c.font = "Bold " + Math.floor(this.cellSize * 0.8) + "px Arial";
             this.c.fillStyle = color;
             this.c.textAlign = "center";
-            this.c.fillText(""+num, x + 15, y + 24);
+            this.c.fillText("" + num, x + this.cellSize * 0.5, y + this.cellSize * 0.8);
         },
-
-        drawButton: function(color1, color2, color3, x, y, size) {
+ 
+        drawButton: function(color1, color2, color3, rawX, rawY) {
+            var x = rawX * this.cellSize, y = rawY * this.cellSize;
+            var smallSize = this.cellSize / 8;
             this.c.strokeStyle = "#000";
             this.c.fillStyle = color2;
             this.c.beginPath();
             this.c.moveTo(x, y);
-            this.c.lineTo(x+size, y);
-            this.c.lineTo(x+size, y+size);
-            this.c.lineTo(x, y+size);
+            this.c.lineTo(x + this.cellSize, y);
+            this.c.lineTo(x + this.cellSize, y + this.cellSize);
+            this.c.lineTo(x, y + this.cellSize);
             this.c.closePath();
             this.c.fill();
             this.c.fillStyle = color1;
             this.c.beginPath();
             this.c.moveTo(x, y);
-            this.c.lineTo(x+size, y);
-            this.c.lineTo(x+size-(size/8), y+(size/8));
-            this.c.lineTo(x+(size/8), y+(size/8));
-            this.c.lineTo(x+(size/8), y+size-(size/8));
-            this.c.lineTo(x, y+size);
+            this.c.lineTo(x + this.cellSize, y);
+            this.c.lineTo(x + this.cellSize - smallSize, y + smallSize);
+            this.c.lineTo(x + smallSize, y + smallSize);
+            this.c.lineTo(x + smallSize, y + this.cellSize - smallSize);
+            this.c.lineTo(x, y + this.cellSize);
             this.c.closePath();
             this.c.fill();
             this.c.fillStyle = color3;
             this.c.beginPath();
-            this.c.moveTo(x+size, y+size);
-            this.c.lineTo(x+size, y);
-            this.c.lineTo(x+size-(size/8), y+(size/8));
-            this.c.lineTo(x+size-(size/8), y+size-(size/8));
-            this.c.lineTo(x+(size/8), y+size-(size/8));
-            this.c.lineTo(x, y+size);
+            this.c.moveTo(x + this.cellSize, y + this.cellSize);
+            this.c.lineTo(x + this.cellSize, y);
+            this.c.lineTo(x + this.cellSize - smallSize, y + smallSize);
+            this.c.lineTo(x + this.cellSize - smallSize, y + this.cellSize - smallSize);
+            this.c.lineTo(x + smallSize, y + this.cellSize - smallSize);
+            this.c.lineTo(x, y + this.cellSize);
             this.c.closePath();
             this.c.fill();
         },
         
-        drawFlag: function(x, y) {
+        drawFlag: function(rawX, rawY) {
+            // TODO
+            var x = rawX * this.cellSize, y = rawY * this.cellSize;
+            var smallSize = this.cellSize / 3;
             this.c.strokeStyle = "#f00";
             this.c.fillStyle = "#f00";
             this.c.beginPath();
-            this.c.moveTo(x+10, y+10);
-            this.c.lineTo(x+20, y+10);
-            this.c.lineTo(x+20, y+20);
-            this.c.lineTo(x+10, y+20);
+            this.c.moveTo(x + smallSize, y + smallSize);
+            this.c.lineTo(x + 2 * smallSize, y + smallSize);
+            this.c.lineTo(x + 2 * smallSize, y + 2 * smallSize);
+            this.c.lineTo(x + smallSize, y + 2 * smallSize);
             this.c.closePath();
             this.c.stroke();
             this.c.fill();
-        },
-        
-        drawCircle: function(color, x, y, r, filled) {
-            this.c.strokeStyle = color;
-            this.c.fillStyle = color;
-            this.c.beginPath();
-            this.c.arc(x, y, r, 0, 2*Math.PI);
-            this.c.closePath();
-            this.c.stroke();
-            if (filled) {
-                this.c.fill();
-            }
-        },
-        
-        drawCircleLine: function(color, x1, y1, r1, x2, y2, r2) {
-            var baseLength = Math.sqrt((y2-y1)*(y2-y1)+(x2-x1)*(x2-x1));
-            this.c.strokeStyle = color;
-            this.c.beginPath();
-            this.c.moveTo(x1 + (x2-x1)*(r1/baseLength), y1 + (y2-y1)*(r1/baseLength));
-            this.c.lineTo(x2 + (x1-x2)*(r2/baseLength), y2 + (y1-y2)*(r2/baseLength));
-            this.c.stroke();
         },
         
         execDialog: function (tabName) {
