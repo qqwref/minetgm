@@ -165,8 +165,8 @@ vueApp = new Vue({
             this.finalTime = 0;
             $('c').height = 500;
             $('c').width = 500;
+            $('c').addEventListener("touchstart", this.clicked, false);
             $('c').addEventListener("mousedown", this.clicked, false);
-            $('c').addEventListener("mouseup", this.clickup, false);
             
             this.level = -1;
             this.levelName = "LEVEL 1";
@@ -281,10 +281,6 @@ vueApp = new Vue({
         clicked: function(event) {
             if (!event)
                 event = window.event;
-            if(event.preventDefault) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
             var x=0, y=0;
             var rect = $('c').getBoundingClientRect();
             if (event.x || event.y) {
@@ -325,11 +321,7 @@ vueApp = new Vue({
         },
 
         clickup: function(event) {
-            if (!event)
-                event = window.event;
-            if(event.preventDefault) {
-                event.preventDefault();
-                event.stopPropagation();}
+            return;
         },
 
         death: function() {

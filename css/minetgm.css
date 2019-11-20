@@ -3,9 +3,8 @@
     box-sizing: border-box; /* padding and border incleded in the width/height */
     overflow-y: hidden;
     overflow-x: hidden;
-    scrolling: no;
-    seamless: seamless;
-	outline: none;
+    /*seamless: seamless; */
+    outline: none;
 }
 
 @font-face {
@@ -35,10 +34,12 @@ select {
 }
 
 .minetgm {
-	position: fixed;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
+    /*position: fixed;*/
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -330px;
+    margin-top: -350px;
 }
 
 select::-ms-expand {
@@ -54,7 +55,7 @@ table {
 }
 
 #settings-btn {
-    position: fixed;
+    /*position: fixed;*/
     right: 0;
     top: 0;
     width: 5vmin;
@@ -70,13 +71,6 @@ table {
 
 #settings-btn:hover {
     opacity: 1;
-}
-
-.grid-input {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1;
 }
 
 .hover-text-bold:hover {
