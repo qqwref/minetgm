@@ -24,6 +24,9 @@
 
 body {
     font-family: Arial, Helvetica, sans-serif;
+    text-align: center;
+    width: 800px;
+    touch-action: manipulation;
 }
 
 select {
@@ -33,18 +36,13 @@ select {
     background: url('../img/dr_down_16.png') no-repeat right;
 }
 
+#app {
+    text-align: center;
+}
+
 .minetgm {
-    /*position: fixed;*/
-    position: absolute;
-	top: 0;
-	left: 0;
-	/*
-    top: 50%;
-    left: 50%;
-    margin-left: -330px;
-    margin-top: -350px;
-	*/
-	margin-left: 50px;
+    display: inline-block;
+    margin-top: 50px;
 }
 
 select::-ms-expand {
