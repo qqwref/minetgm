@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/w3.css">
+    <link rel="stylesheet" href="css/minetgm.css">
+    <script src="js/vue.min.js"></script>
+    <title>Minesweeper: TGM Practice</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+   <div id="app" class="wrapper w3-container"
+         tabindex=-1
+         @keyup.esc="onEsc()"
+         @keyup.enter="if(dialogShowed) hideDialog()"
+         v-focus v-cloak>
+        <div class="minetgm">
+            
+            <table>
+            <tr height="150px">
+             <td width="480px">
+              <table style="height: 150px;" class="digital_font">
+               <tr height="100%">
+                <td width="100px" style="padding-left: 10px; text-align: left; vertical-align: bottom; color: #800">{{("00" + remainingMines).slice(-3)}}</td>
+                <td width="280px" style="text-align: center; vertical-align: middle; font-size: 120%;">{{levelName}}</td>
+                <td width="100px;" style="text-align: right; vertical-align: bottom; color: #800" v-bind:style="{ color: '#' + (level>9 ? 'f00' : '800') }">{{("00" + integerTime).slice(-3)}}</td>
+               </tr>
+              </table>
+             </td>
+             <td class="digital_font" style="width: 200px; vertical-align: middle; text-align: center;"></td>
+            </tr>
+            <tr height="480px">
+             <td width="480px">
+              <canvas width="480px" height="480px" id="c"></canvas>
+             </td>
+             <td width="200px" style="padding-top: 70px; vertical-align: top; text-align: center;" class="digital_font">MODE<br><img v-bind:src='allowFlags ? "blank.png" : "no_flag.png"' /><br><img v-bind:src='showNumbers ? "blank.png" : "no_number.png"' /><br><img v-bind:src='colorRestriction == 0 ? "blank.png" : (colorRestriction == 1 ? "random_color.png" : "no_color.png")' /></td>
+            </tr>
+            </table>
+            
+        </div>
+
+        <div class="w3-modal"
+             :class="[dialogShowed ? 'display-block' : 'display-none']">
+            <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="min-width: 350px; max-width: 800px;">
+                <header class="w3-container w3-blue w3-center">
+                    <span @click="hideDialog"
+                          class="w3-button w3-display-topright w3-xxlarge w3-blue w3-hover-blue w3-hover-text-black"
+                          style="padding: 0 10px 0 0;"
+                          title="Minesweeper: The Grand Master">
+                    &times;
+                    </span>
+                    <h2>Minesweeper: The Grand Master</h2>
+                </header>
+
+                <div class="w3-bar w3-light-grey w3-border-bottom">
+                    <button class="tablink w3-bar-item w3-button"
+                            @click="changeDialogTab('settings')"
+                            :class="[settingsTabVisible  ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
+                        High Scores
+                    </button>
+                    <button class="tablink w3-bar-item w3-button"
+                            @click="changeDialogTab('stats')"
+                            :class="[statsTabVisible ? 'w3-indigo w3-text-white w3-hover-indigo' : 'w3-light-grey w3-hover-white']">
+                        Last Attempt
+                    </button>
+                </div>
+
+                <div class="w3-container w3-margin w3-padding-0" v-if="settingsTabVisible">
+					<p>
+						<label class="w3-validate">Mines: </label>
+						<input v-model="mineCount" style="width: 50%">
+                    </p>
+					<p>
+						<input class="w3-check" type="checkbox" v-model="noFlags">
+                        <label class="w3-validate">No Flags</label>
+					</p>
+					<p>
+						<input class="w3-check" type="checkbox" v-model="noNumbers">
+                        <label class="w3-validate">No Numbers</label>
+					</p>
+					<p>
+						<input class="w3-check" type="checkbox" v-model="randomColors">
+                        <label class="w3-validate">Random Colors</label>
+					</p>
+                </div>
+
+                <div class="w3-container w3-margin" v-if="statsTabVisible">
+                    <div style="text-align: center; font-size: 200%">{{gameOverMessage}}</div><br>
+                    <table class="w3-table-all w3-large">
+                        <tr>
+                            <td>Time</td>
+                            <td>{{timeString(finalTime)}}</td>
+                        </tr>
+                        <tr>
+                            <td>Levels Finished</td>
+                            <td>{{level}}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <footer class="w3-container w3-light-grey w3-center">
+                    <button type="button"
+                            class="w3-btn w3-indigo w3-text-white w3-xlarge"
+                            style="width: 80%; margin: 10px;"
+                            @click="hideDialog();"
+                            ref="btn">
+                        Start Game
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/minetgm_practice.js"></script>
+</body>
+</html>
