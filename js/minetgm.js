@@ -250,13 +250,14 @@ vueApp = new Vue({
             this.sets=[];
             
             // determine basics
-            this.tryGenerateBoard(y,x);
             this.chooseSecretColors();
 
             // init knowledge
             console.log("Generating level " + this.level);
             for (var ii=0; ii<10; ii++) {
-                for (var i=0; i<1000; i++) {
+                this.board=[];
+                this.tryGenerateBoard(y,x);
+                for (var i=0; i<20; i++) {
                     this.initKnowledge();
 
                     // open starting square
@@ -274,7 +275,7 @@ vueApp = new Vue({
                     }
                 }
   
-                console.log("Failed at " + i + " perturbs");
+                console.log("Trying again after " + i + " perturbs");
             }
         },
         
@@ -724,6 +725,7 @@ vueApp = new Vue({
                         }
                     }
                 }
+                    
                 // todo: more complex colors, etc.
             
                 // new logic
@@ -735,9 +737,40 @@ vueApp = new Vue({
                 // something goes wrong with random colors! the //WAT comments signify testing
                 // I saw a thingy with a -2 clue. maybe that is part of the problem, not treating -1 clues properly. is it related to the thing about two equal colors?
             }
+            
+            if (this.sets.length == 0) {
+                // when all regular logic is done, if all remaining squares are either mines or safe, mark them as such
+                var nfull = 0, nempty = 0;
+                var extra_cells = [];
+                for (var i=0; i<this.h; i++) {
+                    for (var j=0; j<this.w; j++) {
+                        if (this.boardKnowledge[i][j]==-1) {
+                            extra_cells.push([i,j]);
+                            if (this.board[i][j] == -1) {
+                                nfull++;
+                            } else {
+                                nempty++;
+                            }
+                        }
+                    }
+                }
+                
+                if (nempty == 0 && nfull > 0) {
+                    console.log("All full " + extra_cells)
+                    for (var c=0; c<extra_cells.length; c++) {
+                        this.boardKnowledge[extra_cells[c][0]][extra_cells[c][1]] = 1;
+                    }
+                }
+                // maybe don't do that for all remaining squares being safe
+                /*if (nempty > 0 && nfull == 0) {
+                    for (var c=0; c<extra_cells.length; c++) {
+                        this.boardKnowledge[extra_cells[c][0]][extra_cells[c][1]] = 0;
+                    }
+                }*/
+            }
         
             if (cnt >= 999) {
-            alert("infinite loop!");
+                alert("infinite loop!");
             }
         },
         
