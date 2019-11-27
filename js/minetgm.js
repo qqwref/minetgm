@@ -755,7 +755,7 @@ vueApp = new Vue({
                     }
                 }
                 
-                if (nempty == 0 && nfull > 0) {
+                if (nempty == 0 && nfull > 0 && nfull < 3) {
                     console.log("All full " + extra_cells)
                     for (var c=0; c<extra_cells.length; c++) {
                         this.boardKnowledge[extra_cells[c][0]][extra_cells[c][1]] = 1;
