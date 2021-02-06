@@ -77,6 +77,7 @@ var appData = {
     dialogShowed: false,
     settingsTabVisible: true,
     statsTabVisible: false,
+    classicControls: false,
     
     h: 16, // height
     w: 16, // width
@@ -91,6 +92,9 @@ var appData = {
     colorKnowledge: [], // color# (from secretColors) -> set of possible numbers
     sets: [], // [color#, number (-1 if not certain), set of cells]
     colorRestriction: 0, // 0 = none, 1 = random, 2 = blind
+    heldLeft: false,
+    heldRight: false,
+    lastHovered: [-1, -1],
     
     // Mines, flags, numbers, color restriction
     LEVEL_TYPES: [
@@ -167,6 +171,8 @@ vueApp = new Vue({
             $('c').width = 500;
             $('c').addEventListener("touchstart", this.clicked, false);
             $('c').addEventListener("mousedown", this.clicked, false);
+            $('c').addEventListener("mouseup", this.mouseup, false);
+            $('c').addEventListener("mousemove", this.mouseover, false);
             
             this.level = -1;
             this.levelName = "LEVEL 1";
@@ -279,35 +285,47 @@ vueApp = new Vue({
             }
         },
         
+        getEventX: function(event) {
+            var rect = $('c').getBoundingClientRect();
+            if (event.x) {
+                return Math.floor((event.x - rect.left)/this.cellSize);
+            } else {
+                return Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - rect.left)/this.cellSize);
+            }
+        },
+        getEventY: function(event) {
+            var rect = $('c').getBoundingClientRect();
+            if (event.y) {
+                return Math.floor((event.y - rect.top)/this.cellSize);
+            } else {
+                return Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - rect.top)/this.cellSize);
+            }
+        },
+        
         clicked: function(event) {
             if (!event)
                 event = window.event;
-            var x=0, y=0;
-            var rect = $('c').getBoundingClientRect();
-            if (event.x || event.y) {
-                x = Math.floor((event.x - rect.left)/this.cellSize);
-                y = Math.floor((event.y - rect.top)/this.cellSize);
-            } else {
-                x = Math.floor((event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - rect.left)/this.cellSize);
-                y = Math.floor((event.clientY + document.body.scrollTop + document.documentElement.scrollTop - rect.top)/this.cellSize);
-            }
+            var x = this.getEventX(event);
+            var y = this.getEventY(event);
             if (x<0 || y<0 || x>=this.w || y>=this.h) {
                 return;
             }
             var leftClick = event.button != 2;
             if (leftClick) { // left click
+                this.heldLeft = true;
                 if (this.boardKnowledge[y][x] == 1) return;
-                if (this.board[y][x] >= 0) { // open square
-                    if (this.boardKnowledge[y][x] > -1) { // chord?
+                if (!this.classicControls && this.board[y][x] >= 0) { // open square
+                    if (this.boardKnowledge[y][x] == 0) { // chord?
                         this.chord(y,x);
                     } else { // open square
                         this.openSquare(y,x);
                         this.draw();
                     }
-                } else { // click on mined square
+                } else if (!this.classicControls) { // click on mined square
                     this.death();
                 }
             } else { // right click
+                this.heldRight = true;
                 if (!this.allowFlags) return;
                 if (this.boardKnowledge[y][x] == 1) { // flagged
                     this.remainingMines += 1;
@@ -321,8 +339,49 @@ vueApp = new Vue({
             }
         },
 
-        clickup: function(event) {
+        mouseup: function(event) {
+            if (!event)
+                event = window.event;
+            var x = this.getEventX(event);
+            var y = this.getEventY(event);
+            if (x<0 || y<0 || x>=this.w || y>=this.h) {
+                return;
+            }
+            var leftClick = event.button != 2;
+            if (leftClick) { // left click
+                this.heldLeft = false;
+                if (this.classicControls && this.heldRight && this.boardKnowledge[y][x] == 0) { // classic chord
+                    this.chord(y,x);
+                } else if (this.classicControls && this.boardKnowledge[y][x] == -1) {
+                    if (this.board[y][x] >= 0) { // open square
+                        this.openSquare(y,x);
+                        this.draw();
+                    } else { // click on mined square
+                        this.death();
+                    }
+                }
+            } else { // right click
+                this.heldRight = false;
+                if (this.classicControls && this.heldLeft && this.boardKnowledge[y][x] == 0) { // classic chord
+                    this.chord(y,x);
+                }
+            }
+        },
+        
+        mouseover: function(event) {
             return;
+            /*if (!event)
+                event = window.event;
+            var x = this.getEventX(event);
+            var y = this.getEventY(event);
+            if (x<0 || y<0 || x>=this.w || y>=this.h) {
+                return;
+            }
+            var leftClick = event.button != 2;
+            var updateHover = (this.lastHovered[0] != x) || (this.lastHovered[1] != y);
+            this.lastHovered = [x, y];
+            if (this.heldLeft && updateHover) this.draw();
+            */
         },
 
         death: function() {
@@ -967,6 +1026,18 @@ vueApp = new Vue({
                 for (var j=0; j<this.w; j++) {
                     // -1 = unknown, 0 = clear, 1 = mine
                     if (this.boardKnowledge[i][j] == -1) { //unknown
+                        /*
+                        if (this.heldLeft) {
+                            dist = Math.max(Math.abs(i - this.lastHovered[1]), Math.abs(j - this.lastHovered[0]));
+                            if (dist == 0) {
+                                this.drawSquare("#ccc", j, i);
+                                continue;
+                            } else if (dist == 1 && this.heldRight) {
+                                this.drawSquare("#ccc", j, i);
+                                continue;
+                            }
+                        }
+                        */
                         this.drawButton("#fff", "#ccc", "#888", j, i);
                     } else if (this.boardKnowledge[i][j] == 0) {
                         if (this.colorRestriction == 0 && this.showNumbers && this.board[i][j] > 0) {
